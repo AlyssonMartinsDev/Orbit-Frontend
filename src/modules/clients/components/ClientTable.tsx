@@ -4,12 +4,6 @@ import { useEffect, useState } from "react";
 
 import type { ClientResponse } from "../types/client.types";
 
-
-
-
-
-
-
 export function ClientTable() {
 
     const [clients, setClients] = useState<ClientResponse[]>([]);
