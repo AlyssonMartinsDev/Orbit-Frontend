@@ -1,5 +1,5 @@
 import { ClientService } from "../services/client.service";
-import { useMessageStore } from "../../../shared/store/message.store"
+
 import { useEffect, useState } from "react";
 
 import type { ClientResponse } from "../types/client.types";

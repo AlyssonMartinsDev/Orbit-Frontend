@@ -53,7 +53,7 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
         useState<ClientMode>("existing");
 
     const clients = useClientStore((state) => state.clients);
-    const isLoadingClients = useClientStore((state) => state.isLoading);
+
     const loadClients = useClientStore((state) => state.loadClients);
 
     const [formData, setFormData] = useState<WorkOrderFormState>({
