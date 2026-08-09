@@ -6,6 +6,7 @@ import { AppLayout } from "../../shared/layouts/AppLayout";
 
 // Rotas
 import { NotFoundPage } from "../../shared/pages/NotFoundPage";
+import HomePage from "../../pages/HomePage";
 import { ClientsOptionsPage } from "../../modules/clients/pages/ClientsOptionsPage";
 import { WorkOrdersOptionsPage } from "../../modules/work-orders/pages/WorkOrdersOptionsPage";
 
@@ -20,7 +21,7 @@ import { EditWorkOrderPage } from "../../modules/work-orders/pages/EditWorkOrder
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: <h1>Orbit Web</h1>,
+        element: <HomePage />,
     },
     {
         path: "/login",
