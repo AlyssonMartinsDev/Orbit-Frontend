@@ -12,6 +12,12 @@ import { Modal } from "../../../shared/components/modal";
 
 import type { DashboardRecentWorkOrder } from "../../dashboard/types/dashboard.types";
 
+import { WorkOrderService } from "../services/work-order.service";
+
+import { useMessageStore } from "../../../shared/store/message.store";
+
+import { useDashboardStore } from "../../../shared/store/dashboard.store";
+
 interface WorkOrderActionsModalProps {
     open: boolean;
     workOrder: DashboardRecentWorkOrder | null;
@@ -27,8 +33,50 @@ export function WorkOrderActionsModal({
     if (!workOrder) {
         return null;
     }
+    const showMessage = useMessageStore((state) => state.showMessage);
 
     const navigate = useNavigate();
+
+    const loadSummary = useDashboardStore((state) => state.loadSummary);
+
+    const handleUpdate = async (status_update: "service" | "payment") => {
+        // Implementacao da logica de atualizacao do status da ordem de servico e pagamento
+        let data = {};
+        if (status_update === "service") {
+            // Atualizar status da ordem de serviço para "Finalizada"
+            data = { status_service: "FINALIZADO" }
+        } else if (status_update === "payment") {
+            // Atualizar status do pagamento para "Pago"
+            data = { status_payment: "PAGO" }
+        }
+
+        const res = await WorkOrderService.update(workOrder.id, data as any);
+
+        if (!res.success) {
+            // Handle error
+            showMessage(res.message, "error");
+            return;
+
+        }
+
+        await loadSummary(true); // Recarregar o resumo do dashboard para refletir as alterações
+        showMessage(`Ordem de serviço #${workOrder.id} atualizada com sucesso!`, "success");
+    }
+
+    const handleDelete = async () => {
+        const res = await WorkOrderService.delete(workOrder.id);
+        
+        if (!res.success) {
+            // Handle error
+            showMessage(res.message, "error");
+            return;
+        }
+
+        await loadSummary(true); // Recarregar o resumo do dashboard para refletir as alterações
+        showMessage(`Ordem de serviço #${workOrder.id} excluída com sucesso!`, "success");
+        onClose(); // Fechar o modal após a exclusão
+    }
+
 
     return (
         <Modal
@@ -61,6 +109,7 @@ export function WorkOrderActionsModal({
 
                 <button
                     type="button"
+                    onClick={() => handleUpdate("service")}
                     className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left text-zinc-200 transition hover:bg-white/5"
                 >
                     <CheckCircle size={19} className="text-emerald-300" />
@@ -69,6 +118,7 @@ export function WorkOrderActionsModal({
 
                 <button
                     type="button"
+                    onClick={() => handleUpdate("payment")}
                     className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left text-zinc-200 transition hover:bg-white/5"
                 >
                     <CreditCard size={19} className="text-amber-300" />
@@ -77,6 +127,7 @@ export function WorkOrderActionsModal({
 
                 <button
                     type="button"
+                    onClick={handleDelete}
                     className="flex items-center gap-3 rounded-xl border border-red-500/20 px-4 py-3 text-left text-red-300 transition hover:bg-red-500/10 sm:col-span-2"
                 >
                     <Trash2 size={19} />

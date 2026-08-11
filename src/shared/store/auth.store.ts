@@ -13,8 +13,8 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-    token: sessionStorage.getItem("orbit_token"),
-    isAuthenticated: !!sessionStorage.getItem("orbit_token"),
+    token: localStorage.getItem("orbit_token"),
+    isAuthenticated: !!localStorage.getItem("orbit_token"),
 
     login: async (data) => {
         const response = await AuthService.login(data);

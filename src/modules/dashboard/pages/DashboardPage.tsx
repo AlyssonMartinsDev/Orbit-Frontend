@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useDashboardStore } from "../../../shared/store/dashboard.store";
 
@@ -59,6 +60,7 @@ export function DashboardPage() {
             currency: "BRL",
         }).format(value);
     };
+    const navigate = useNavigate();
 
     if (isLoading && !summary) {
         return (
@@ -87,7 +89,9 @@ export function DashboardPage() {
                     </p>
                 </div>
 
-                <button className="w-full rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold hover:bg-violet-500 sm:w-auto">
+                <button 
+                onClick={() => navigate("/work-orders/create")}
+                className="w-full rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold hover:bg-violet-500 sm:w-auto">
                     Nova OS
                 </button>
             </header>

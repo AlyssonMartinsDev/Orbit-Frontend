@@ -46,4 +46,14 @@ export class WorkOrderService {
 
         return response.data;
     }
+
+    static async delete(
+        id: number
+    ): Promise<ApiResponse<WorkOrderResponse>> {
+        const response = await api.delete<ApiResponse<WorkOrderResponse>>(
+            `/work_orders/${id}`
+        );
+
+        return response.data;
+    }
 }
