@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../shared/store/auth.store";
@@ -12,6 +12,8 @@ export function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+
   const showMessage = useMessageStore(
     (state) => state.showMessage
   )
@@ -21,7 +23,7 @@ export function LoginPage() {
 
   // Funções 
 
-  const handleSubmit = async (event: any) => {
+  const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
 
@@ -50,7 +52,7 @@ export function LoginPage() {
       navigate("/dashboard");
 
     } catch (error) {
-      
+      console.error("Erro inesperado na aplicação:", error);
       showMessage(
         "Erro inesperado na aplicação.",
         "error"

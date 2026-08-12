@@ -1,3 +1,6 @@
+// hooks
+import { WorkOrderService } from "../services/work-order.service";
+
 import {
     CheckCircle,
     CreditCard,
@@ -11,8 +14,9 @@ import { useNavigate } from "react-router-dom";
 import { Modal } from "../../../shared/components/modal";
 
 import type { DashboardRecentWorkOrder } from "../../dashboard/types/dashboard.types";
+import type { UpdateWorkOrderRequest } from "../types/work-order.types";
 
-import { WorkOrderService } from "../services/work-order.service";
+
 
 import { useMessageStore } from "../../../shared/store/message.store";
 
@@ -30,18 +34,19 @@ export function WorkOrderActionsModal({
     onClose,
     onView,
 }: WorkOrderActionsModalProps) {
-    if (!workOrder) {
-        return null;
-    }
+
     const showMessage = useMessageStore((state) => state.showMessage);
 
     const navigate = useNavigate();
 
     const loadSummary = useDashboardStore((state) => state.loadSummary);
 
+    if (!workOrder) {
+        return null;
+    }
     const handleUpdate = async (status_update: "service" | "payment") => {
         // Implementacao da logica de atualizacao do status da ordem de servico e pagamento
-        let data = {};
+        let data: UpdateWorkOrderRequest = {};
         if (status_update === "service") {
             // Atualizar status da ordem de serviço para "Finalizada"
             data = { status_service: "FINALIZADO" }
@@ -50,7 +55,7 @@ export function WorkOrderActionsModal({
             data = { status_payment: "PAGO" }
         }
 
-        const res = await WorkOrderService.update(workOrder.id, data as any);
+        const res = await WorkOrderService.update(workOrder.id, data);
 
         if (!res.success) {
             // Handle error
@@ -65,7 +70,7 @@ export function WorkOrderActionsModal({
 
     const handleDelete = async () => {
         const res = await WorkOrderService.delete(workOrder.id);
-        
+
         if (!res.success) {
             // Handle error
             showMessage(res.message, "error");
