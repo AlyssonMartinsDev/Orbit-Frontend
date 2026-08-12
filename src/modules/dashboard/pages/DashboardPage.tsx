@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+
 import { useDashboardStore } from "../../../shared/store/dashboard.store";
 
 import { Loading } from "../../../shared/components/loading";
@@ -10,6 +11,9 @@ import { Loading } from "../../../shared/components/loading";
 import { WorkOrderActionsModal } from "../../work-orders/components/WorkOrderActionsModal";
 import type { DashboardRecentWorkOrder } from "../types/dashboard.types";
 import { WorkOrderDetailsModal } from "../../work-orders/components/WorkOrderDetailsModal";
+
+// Componentes da dashboard
+import { WorkOrderTabs } from "../components/WorkOrderTabs";
 
 
 export function DashboardPage() {
@@ -68,6 +72,21 @@ export function DashboardPage() {
         return <Loading message="Carregando resumo do dashboard..." />;
     }
 
+
+    // Carregnado os dados das ordens de serviço 
+
+    const openWorkOrders =
+        summary?.recent_work_orders.filter(
+            (workOrder) =>
+                workOrder.status_service !== "FINALIZADO"
+        ) ?? [];
+
+    const finishedWorkOrders =
+        summary?.recent_work_orders.filter(
+            (workOrder) =>
+                workOrder.status_service === "FINALIZADO"
+        ) ?? [];
+
     return (
         <section className="w-full px-4 py-6 sm:px-6 lg:px-10">
             <header className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
@@ -85,9 +104,9 @@ export function DashboardPage() {
                     </p>
                 </div>
 
-                <button 
-                onClick={() => navigate("/work-orders/create")}
-                className="w-full rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold hover:bg-violet-500 sm:w-auto">
+                <button
+                    onClick={() => navigate("/work-orders/create")}
+                    className="w-full rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold hover:bg-violet-500 sm:w-auto">
                     Nova OS
                 </button>
             </header>
@@ -135,48 +154,12 @@ export function DashboardPage() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-6 xl:col-span-2">
-                    <h3 className="text-lg font-semibold sm:text-xl">
-                        Ordens recentes
-                    </h3>
-
-                    <div className="mt-5 space-y-4">
-                        {summary?.recent_work_orders.length ? (
-                            summary.recent_work_orders.map((workOrder) => (
-                                <div
-                                    key={workOrder.id}
-                                    onClick={() => handleOpenWorkOrderModal(workOrder)}
-                                    className="flex flex-col gap-4 rounded-2xl bg-[#0B1120] p-4 sm:flex-row sm:items-center sm:justify-between"
-                                >
-                                    <div>
-                                        <p className="font-medium">
-                                            {workOrder.title}
-                                        </p>
-
-                                        <p className="mt-1 text-sm text-zinc-400">
-                                            {workOrder.client_name}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
-                                        <p className="text-xs text-violet-300 sm:text-sm">
-                                            {workOrder.status_service}
-                                        </p>
-
-                                        <p className="font-semibold sm:mt-1">
-                                            {formatCurrency(workOrder.price)}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="rounded-2xl bg-[#0B1120] p-4">
-                                <p className="text-sm text-zinc-400">
-                                    Nenhuma ordem de serviço encontrada.
-                                </p>
-                            </div>
-                        )}
-                    </div>
+                <div className="xl:col-span-2">
+                    <WorkOrderTabs
+                        openWorkOrders={openWorkOrders}
+                        finishedWorkOrders={finishedWorkOrders}
+                        onSelectWorkOrder={handleOpenWorkOrderModal}
+                    />
                 </div>
 
                 <div className="rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(124,58,237,0.25),_transparent_35%),rgba(255,255,255,0.04)] p-5 sm:p-6">
