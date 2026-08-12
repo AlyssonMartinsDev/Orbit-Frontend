@@ -44,6 +44,14 @@ export function WorkOrderActionsModal({
     if (!workOrder) {
         return null;
     }
+
+    const isServiceFinished =
+        workOrder.status_service === "FINALIZADO";
+
+    const isPaymentPaid =
+        workOrder.status_payment === "PAGO";
+
+
     const handleUpdate = async (status_update: "service" | "payment") => {
         // Implementacao da logica de atualizacao do status da ordem de servico e pagamento
         let data: UpdateWorkOrderRequest = {};
@@ -115,19 +123,29 @@ export function WorkOrderActionsModal({
                 <button
                     type="button"
                     onClick={() => handleUpdate("service")}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left text-zinc-200 transition hover:bg-white/5"
+                    className={`flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left text-zinc-200 transition hover:bg-white/5 ${isServiceFinished
+                            ? "cursor-not-allowed bg-zinc-700 text-zinc-400"
+                            : "bg-violet-600 text-white hover:bg-violet-700"
+                        }`}
                 >
                     <CheckCircle size={19} className="text-emerald-300" />
-                    Finalizar OS
+                    {isServiceFinished
+                        ? "OS finalizada"
+                        : "Finalizar OS"}
                 </button>
 
                 <button
                     type="button"
                     onClick={() => handleUpdate("payment")}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left text-zinc-200 transition hover:bg-white/5"
+                    className={`flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3 text-left text-zinc-200 transition hover:bg-white/5 ${isPaymentPaid
+                        ? "cursor-not-allowed bg-zinc-700 text-zinc-400"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                        }`}
                 >
                     <CreditCard size={19} className="text-amber-300" />
-                    Marcar como paga
+                    {isPaymentPaid
+                        ? "Pagamento realizado"
+                        : "Marcar como pago"}
                 </button>
 
                 <button

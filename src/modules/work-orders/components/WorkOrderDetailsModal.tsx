@@ -17,6 +17,7 @@ export function WorkOrderDetailsModal({
         return null;
     }
 
+
     const formatCurrency = (value: number) =>
         new Intl.NumberFormat("pt-BR", {
             style: "currency",
