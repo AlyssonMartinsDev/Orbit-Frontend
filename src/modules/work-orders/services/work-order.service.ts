@@ -6,6 +6,7 @@ import type { ApiResponse } from "../../../shared/types/api.types"
 import type {
     CreateWorkOrderRequest,
     WorkOrderResponse,
+    UpdateWorkOrderRequest
 } from "../types/work-order.types"
 
 
@@ -37,7 +38,7 @@ export class WorkOrderService {
 
     static async update(
         id: number,
-        workOrderData: CreateWorkOrderRequest
+        workOrderData: UpdateWorkOrderRequest
     ): Promise<ApiResponse<WorkOrderResponse>> {
         const response = await api.put<ApiResponse<WorkOrderResponse>>(
             `/work_orders/${id}`,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+
 import { useNavigate } from "react-router-dom";
 
 import { useClientStore } from "../../../shared/store/client.store";
@@ -56,23 +57,49 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
 
     const loadClients = useClientStore((state) => state.loadClients);
 
-    const [formData, setFormData] = useState<WorkOrderFormState>({
-        client: {
-            id: "",
-            name: "",
-            phone: "",
-            email: "",
-            notes: "",
-        },
+    const getInitialFormData = (): WorkOrderFormState => {
+        if (mode === "edit" && workOrder) {
+            return {
+                client: {
+                    id: workOrder.client.id,
+                    name: workOrder.client.name ?? "",
+                    phone: workOrder.client.phone ?? "",
+                    email: workOrder.client.email ?? "",
+                    notes: "",
+                },
 
-        workOrder: {
-            title: "",
-            description: "",
-            status_service: "EM_ANDAMENTO",
-            status_payment: "PENDENTE",
-            price: 0,
-        },
-    });
+                workOrder: {
+                    title: workOrder.title,
+                    description: workOrder.description ?? "",
+                    status_service: workOrder.status_service,
+                    status_payment: workOrder.status_payment,
+                    price: Number(workOrder.price),
+                },
+            };
+        }
+
+        return {
+            client: {
+                id: "",
+                name: "",
+                phone: "",
+                email: "",
+                notes: "",
+            },
+
+            workOrder: {
+                title: "",
+                description: "",
+                status_service: "EM_ANDAMENTO",
+                status_payment: "PENDENTE",
+                price: 0,
+            },
+        };
+    };
+
+
+    const [formData, setFormData] =
+        useState<WorkOrderFormState>(getInitialFormData);
 
     const handleClientChange = (
         field: keyof WorkOrderFormState["client"],
@@ -105,33 +132,9 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
         void loadClients();
     }, [loadClients]);
 
-    useEffect(() => {
-        if (mode !== "edit" || !workOrder) {
-            return;
-        }
 
-        setClientMode("existing");
 
-        setFormData({
-            client: {
-                id: workOrder.client.id,
-                name: workOrder.client.name ?? "",
-                phone: workOrder.client.phone ?? "",
-                email: workOrder.client.email ?? "",
-                notes: "",
-            },
-
-            workOrder: {
-                title: workOrder.title,
-                description: workOrder.description ?? "",
-                status_service: workOrder.status_service,
-                status_payment: workOrder.status_payment,
-                price: Number(workOrder.price),
-            },
-        });
-    }, [mode, workOrder]);
-
-    const handleSubmit = async (event: any) => {
+    const handleSubmit = async (event:  React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         const clientPayload = clientMode === "existing" ? {
             id: Number(formData.client.id)
@@ -157,7 +160,7 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
             price: formData.workOrder.price,
         }
 
-        const payload: CreateWorkOrderRequest = {
+        const payload: any = {
             client: clientPayload,
             work_order: workOrderPayload,
         }

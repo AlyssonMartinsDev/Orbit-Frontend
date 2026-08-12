@@ -38,3 +38,23 @@ export interface WorkOrderResponse {
     created_at: string;
     updated_at: string;
 }
+
+export type WorkOrderStatus =
+    | "PENDENTE"
+    | "EM_ANDAMENTO"
+    | "FINALIZADO"
+    | "CANCELADO";
+
+export type PaymentStatus =
+    | "PENDENTE"
+    | "PAGO"
+    | "PARCIAL"
+    | "CANCELADO";
+
+export interface UpdateWorkOrderRequest {
+    title?: string;
+    description?: string;
+    status_service?: WorkOrderStatus;
+    status_payment?: PaymentStatus;
+    price?: number;
+}
