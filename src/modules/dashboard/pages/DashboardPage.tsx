@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import { useDashboardStore } from "../../../shared/store/dashboard.store";
 
+import { Loading } from "../../../shared/components/loading";
+
 
 // Modal de ações para ordens de serviço 
 import { WorkOrderActionsModal } from "../../work-orders/components/WorkOrderActionsModal";
@@ -63,13 +65,7 @@ export function DashboardPage() {
     const navigate = useNavigate();
 
     if (isLoading && !summary) {
-        return (
-            <section className="w-full px-4 py-6 sm:px-6 lg:px-10">
-                <p className="text-sm text-zinc-400">
-                    Carregando dashboard...
-                </p>
-            </section>
-        );
+        return <Loading message="Carregando resumo do dashboard..." />;
     }
 
     return (
