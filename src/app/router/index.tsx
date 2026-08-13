@@ -13,6 +13,8 @@ import { WorkOrdersOptionsPage } from "../../modules/work-orders/pages/WorkOrder
 // Clients Routes
 import { CreateClientPage } from "../../modules/clients/pages/CreateClientPage";
 import { ClientListPage } from "../../modules/clients/pages/ClientListPage";
+import { ClientDetailsPage } from "../../modules/clients/pages/ClientsDetailPage";
+import { EditClientPage } from "../../modules/clients/pages/EditClientPage";
 
 // Work Orders Routes
 import { CreateWorkOrderPage } from "../../modules/work-orders/pages/CreateWorkOrderPage";
@@ -67,6 +69,26 @@ export const router = createBrowserRouter([
                 </AppLayout>
             </ProtectedRoute>
         ),
+    },
+    {
+        path: "/clients/:id/details",
+        element: (
+            <ProtectedRoute>
+                <AppLayout>
+                    <ClientDetailsPage />
+                </AppLayout>
+            </ProtectedRoute>
+        ),
+    },
+    {
+        path: "/clients/:id/edit",
+        element: (
+            <ProtectedRoute>
+                <AppLayout>
+                    <EditClientPage />
+                </AppLayout>
+            </ProtectedRoute>
+        ),  
     },
     {
         path: "/clients/list",

@@ -1,14 +1,47 @@
+// icones 
+import {
+    Pencil,
+    Trash2,
+    ClipboardList,
+} from "lucide-react";
+
+// navigation
+import { useNavigate } from "react-router-dom";
+
+// Services
 import { ClientService } from "../services/client.service";
 
+// Hooks
 import { useEffect, useState } from "react";
+import { useClientStore } from "../../../shared/store/client.store";
+import { useMessageStore } from "../../../shared/store/message.store";
 
-import type { ClientResponse } from "../types/client.types";
+
 
 export function ClientTable() {
+    // State
+    const clients = useClientStore(
+        (state) => state.clients
+    );
 
-    const [clients, setClients] = useState<ClientResponse[]>([]);
+    const loading = useClientStore(
+        (state) => state.isLoading
+    );
 
-    const [loading, setLoading] = useState(true);
+    const loadClients = useClientStore(
+        (state) => state.loadClients
+    );
+
+    const removeClient = useClientStore(
+        (state) => state.removeClient
+    );
+
+    const navigate = useNavigate();
+
+
+    const showMessage = useMessageStore((state) => state.showMessage);
+
+
 
     const [search, setSearch] = useState("");
 
@@ -22,26 +55,39 @@ export function ClientTable() {
         );
     });
 
-    const loadClients = async () => {
-        try {
-            setLoading(true);
 
-            const response = await ClientService.getAll();
-
-            if (!response.success) {
-                return;
-            }
-
-            setClients(response.data);
-
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
         loadClients();
     }, []);
+
+
+    const handleDelete = async (clientId: number) => {
+        const confirmed = window.confirm(
+            "Tem certeza que deseja excluir este cliente?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+            const response = await ClientService.delete(clientId);
+
+            if (!response.success) {
+                showMessage(response.message, "error");
+                return;
+            }
+
+            removeClient(clientId);
+
+            showMessage("Cliente excluído com sucesso.", "success");
+        } catch (error) {
+            console.error("Error deleting client:", error);
+            showMessage("Erro ao excluir cliente.", "error");
+        }
+    }
 
     return (
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
@@ -100,8 +146,34 @@ export function ClientTable() {
                                     {client.email}
                                 </td>
 
-                                <td className="px-6 py-4 text-right">
-                                    Ações
+                                <td className="px-6 py-4">
+                                    <div className="flex justify-end gap-2">
+
+                                        <button
+                                            title="Detalhes"
+                                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/10 hover:text-violet-400"
+                                            onClick={() => navigate(`/clients/${client.id}/details`)}
+                                        >
+                                            <ClipboardList size={18} />
+                                        </button>
+
+                                        <button
+                                            title="Editar"
+                                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/10 hover:text-yellow-400"
+                                            onClick={() => navigate(`/clients/${client.id}/edit`)}
+                                        >
+                                            <Pencil size={18} />
+                                        </button>
+
+                                        <button
+                                            title="Excluir"
+                                            className="rounded-lg p-2 text-zinc-400 transition hover:bg-red-500/10 hover:text-red-400"
+                                            onClick={() => handleDelete(client.id)}
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -138,12 +210,31 @@ export function ClientTable() {
                             </div>
 
                             <div className="mt-5 flex gap-3">
-                                <button className="flex-1 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white">
-                                    Editar
+                                <button
+                                    title="Detalhes"
+                                    className="rounded-lg flex flex-row gap-2 items-center p-2 text-zinc-400 transition hover:bg-white/10 hover:text-violet-400"
+                                    onClick={() => navigate(`/clients/${client.id}/details`)}
+                                >
+                                    <ClipboardList size={18} />
+                                    DETALHES
                                 </button>
 
-                                <button className="flex-1 rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-300">
-                                    Excluir
+                                <button
+                                    title="Editar"
+                                    className="rounded-lg flex flex-row gap-2 items-center p-2 text-zinc-400 transition hover:bg-white/10 hover:text-yellow-400"
+                                    onClick={() => navigate(`/clients/${client.id}/edit`)}
+                                >
+                                    <Pencil size={18} />
+                                    EDITAR
+                                </button>
+
+                                <button
+                                    title="Excluir"
+                                    className="rounded-lg flex flex-row gap-2 items-center p-2 text-zinc-400 transition hover:bg-red-500/10 hover:text-red-400"
+                                    onClick={() => handleDelete(client.id)}
+                                >
+                                    <Trash2 size={18} />
+                                    EXCLUIR
                                 </button>
                             </div>
                         </div>
