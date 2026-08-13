@@ -1,4 +1,4 @@
-import { List, Pencil, Plus } from "lucide-react";
+import { List, Plus } from "lucide-react";
 
 import { ModuleOptionsPage } from "../../../shared/components/module-options";
 
@@ -13,12 +13,6 @@ export function ClientsOptionsPage() {
                     description: "Cadastrar um novo cliente no sistema.",
                     path: "/clients/create",
                     icon: Plus,
-                },
-                {
-                    title: "Editar",
-                    description: "Alterar informações de um cliente existente.",
-                    path: "/clients/edit",
-                    icon: Pencil,
                 },
                 {
                     title: "Listar",
