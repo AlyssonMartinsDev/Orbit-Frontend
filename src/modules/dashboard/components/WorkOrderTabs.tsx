@@ -33,6 +33,26 @@ export function WorkOrderTabs({
         }).format(value);
     };
 
+    const getPaymentStyle = (status: string) => {
+        switch (status) {
+            case "PAGO":
+                return "text-emerald-400";
+
+            case "PENDENTE":
+                return "text-amber-400";
+
+            case "PARCIAL":
+                return "text-orange-400";
+
+            case "CANCELADO":
+                return "text-red-400";
+
+            default:
+                return "text-zinc-400";
+        }
+    };
+
+
     return (
         <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
             <div>
@@ -51,8 +71,8 @@ export function WorkOrderTabs({
                     type="button"
                     onClick={() => setActiveTab("open")}
                     className={`flex-1 rounded-xl px-4 py-3 text-sm font-medium transition ${activeTab === "open"
-                            ? "bg-violet-600 text-white"
-                            : "text-zinc-400 hover:text-white"
+                        ? "bg-violet-600 text-white"
+                        : "text-zinc-400 hover:text-white"
                         }`}
                 >
                     Em andamento ({openWorkOrders.length})
@@ -62,8 +82,8 @@ export function WorkOrderTabs({
                     type="button"
                     onClick={() => setActiveTab("finished")}
                     className={`flex-1 rounded-xl px-4 py-3 text-sm font-medium transition ${activeTab === "finished"
-                            ? "bg-violet-600 text-white"
-                            : "text-zinc-400 hover:text-white"
+                        ? "bg-violet-600 text-white"
+                        : "text-zinc-400 hover:text-white"
                         }`}
                 >
                     Finalizadas ({finishedWorkOrders.length})
@@ -94,13 +114,22 @@ export function WorkOrderTabs({
 
                             <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
                                 <p className="text-xs text-violet-300 sm:text-sm">
-                                    {workOrder.status_service}
+                                    Ordem de Serviço: {workOrder.status_service}
+                                </p>
+                                <p
+                                    className={`mt-1 text-xs ${getPaymentStyle(
+                                        workOrder.status_payment
+                                    )}`}
+                                >
+                                    Status Pagamento: {workOrder.status_payment}
                                 </p>
 
-                                <p className="font-semibold text-white sm:mt-1">
-                                    {formatCurrency(
-                                        workOrder.price
-                                    )}
+                                <p
+                                    className={`font-semibold sm:mt-1 ${getPaymentStyle(
+                                        workOrder.status_payment
+                                    )}`}
+                                >
+                                    Valor: {formatCurrency(workOrder.price)}
                                 </p>
                             </div>
                         </button>
