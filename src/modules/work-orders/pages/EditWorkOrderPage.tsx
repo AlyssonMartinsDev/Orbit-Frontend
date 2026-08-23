@@ -4,13 +4,13 @@ import { useParams } from "react-router-dom";
 import { WorkOrderForm } from "../components/WorkOrderForm";
 import { WorkOrderService } from "../services/work-order.service";
 
-import type { WorkOrderResponse } from "../types/work-order.types";
+
 
 export function EditWorkOrderPage() {
     const { id } = useParams();
 
     const [workOrder, setWorkOrder] =
-        useState<WorkOrderResponse | null>(null);
+        useState<any | null>(null);
 
     const [isLoading, setIsLoading] =
         useState(true);
