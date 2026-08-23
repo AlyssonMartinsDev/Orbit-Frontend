@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useClientStore } from "../../../shared/store/client.store";
 import type { CreateWorkOrderRequest } from "../types/work-order.types";
+import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
 
 import { WorkOrderService } from "../services/work-order.service";
 
@@ -53,6 +54,16 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
     const [clientMode, setClientMode] =
         useState<ClientMode>("existing");
 
+    // Definições dos campos personalizados
+    const customFields = useCustomFieldStore(
+        (state) => state.customFields
+    );
+
+    // Carrega os campos ativos, caso ainda não estejam na store
+    const loadCustomFields = useCustomFieldStore(
+        (state) => state.loadCustomFields
+    );
+
     const clients = useClientStore((state) => state.clients);
 
     const loadClients = useClientStore((state) => state.loadClients);
@@ -101,6 +112,10 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
     const [formData, setFormData] =
         useState<WorkOrderFormState>(getInitialFormData);
 
+    const [customFieldValues, setCustomFieldValues] = useState<
+        Record<number, string>
+    >({});
+
     const handleClientChange = (
         field: keyof WorkOrderFormState["client"],
         value: WorkOrderFormState["client"][keyof WorkOrderFormState["client"]]
@@ -134,7 +149,7 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
 
 
 
-    const handleSubmit = async (event:  React.SubmitEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
         const clientPayload = clientMode === "existing" ? {
             id: Number(formData.client.id)
@@ -163,6 +178,14 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
         const payload: any = {
             client: clientPayload,
             work_order: workOrderPayload,
+
+            // Só envia custom_values quando existirem campos
+            // personalizados configurados.
+            ...(customValues.length > 0 && {
+                custom_values: {
+                    values: customValues,
+                },
+            }),
         }
 
         const response =
@@ -188,6 +211,29 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
         await loadSummary(true); // Atualiza o resumo do dashboard após criar a ordem de serviço
         navigate("/dashboard");
     }
+
+    // Monta os valores dos campos personalizados
+    // no formato esperado pelo backend.
+    const customValues = customFields
+        .filter((field) => field.active)
+        .map((field) => ({
+            field_definition_id: field.id,
+            value: customFieldValues[field.id] ?? "",
+        }));
+
+    const handleCustomFieldChange = (
+        fieldId: number,
+        value: string
+    ) => {
+        setCustomFieldValues((current) => ({
+            ...current,
+            [fieldId]: value,
+        }));
+    };
+
+    useEffect(() => {
+        void loadCustomFields();
+    }, [loadCustomFields]);
     return (
         <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Cliente */}
@@ -500,7 +546,108 @@ export function WorkOrderForm({ mode = "create", workOrder }: WorkOrderFormProps
                         className="w-full resize-none rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 text-white outline-none transition focus:border-violet-500"
                     />
                 </div>
+
             </section>
+            {customFields.length > 0 && (
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                    <h2 className="text-xl font-semibold text-white">
+                        Dados complementares
+                    </h2>
+
+                    <p className="mt-2 text-sm text-zinc-400">
+                        Preencha as informações adicionais da ordem de serviço.
+                    </p>
+
+                    <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {customFields.map((field) => (
+                            <div key={field.id}>
+                                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                                    {field.name}
+
+                                    {field.required && (
+                                        <span className="ml-1 text-red-400">
+                                            *
+                                        </span>
+                                    )}
+                                </label>
+
+                                {field.field_type === "TEXT" && (
+                                    <input
+                                        type="text"
+                                        required={field.required}
+                                        placeholder={field.placeholder ?? ""}
+                                        value={customFieldValues[field.id] ?? ""}
+                                        onChange={(event) =>
+                                            handleCustomFieldChange(
+                                                field.id,
+                                                event.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 outline-none transition focus:border-violet-500"
+                                    />
+                                )}
+
+                                {field.field_type === "NUMBER" && (
+                                    <input
+                                        type="number"
+                                        required={field.required}
+                                        placeholder={field.placeholder ?? ""}
+                                        value={customFieldValues[field.id] ?? ""}
+                                        onChange={(event) =>
+                                            handleCustomFieldChange(
+                                                field.id,
+                                                event.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 outline-none transition focus:border-violet-500"
+                                    />
+                                )}
+
+                                {field.field_type === "DATE" && (
+                                    <input
+                                        type="date"
+                                        required={field.required}
+                                        value={customFieldValues[field.id] ?? ""}
+                                        onChange={(event) =>
+                                            handleCustomFieldChange(
+                                                field.id,
+                                                event.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 outline-none transition focus:border-violet-500"
+                                    />
+                                )}
+
+                                {field.field_type === "BOOLEAN" && (
+                                    <select
+                                        required={field.required}
+                                        value={customFieldValues[field.id] ?? ""}
+                                        onChange={(event) =>
+                                            handleCustomFieldChange(
+                                                field.id,
+                                                event.target.value
+                                            )
+                                        }
+                                        className="w-full rounded-xl border border-white/10 bg-[#0B1120] px-4 py-3 outline-none transition focus:border-violet-500"
+                                    >
+                                        <option value="">
+                                            Selecione
+                                        </option>
+
+                                        <option value="true">
+                                            Sim
+                                        </option>
+
+                                        <option value="false">
+                                            Não
+                                        </option>
+                                    </select>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Ações */}
             <div className="flex flex-col-reverse gap-4 sm:flex-row sm:justify-end">

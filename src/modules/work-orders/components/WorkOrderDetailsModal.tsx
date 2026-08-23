@@ -1,4 +1,5 @@
 import { Modal } from "../../../shared/components/modal";
+import { useNavigate } from "react-router-dom";
 
 import type { DashboardRecentWorkOrder } from "../../dashboard/types/dashboard.types";
 
@@ -16,6 +17,12 @@ export function WorkOrderDetailsModal({
     if (!workOrder) {
         return null;
     }
+
+    const navigate = useNavigate();
+
+    const handleOpenDetails = () => {
+        navigate(`/work-orders/${workOrder.id}/details`);
+    };
 
 
     const formatCurrency = (value: number) =>
@@ -74,6 +81,13 @@ export function WorkOrderDetailsModal({
                         {formatDate(workOrder.created_at)}
                     </p>
                 </div>
+                <button
+                    type="button"
+                    onClick={handleOpenDetails}
+                    className="mt-6 w-full rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-500"
+                >
+                    Ver detalhes completos
+                </button>
             </div>
         </Modal>
     );

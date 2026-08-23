@@ -1,4 +1,4 @@
-import { ClipboardList, List, Pencil, Plus } from "lucide-react";
+import { ClipboardList, List, Plus, Settings2 } from "lucide-react";
 
 import { ModuleOptionsPage } from "../../../shared/components/module-options";
 
@@ -15,10 +15,10 @@ export function WorkOrdersOptionsPage() {
                     icon: Plus,
                 },
                 {
-                    title: "Editar",
-                    description: "Alterar informações de uma ordem existente.",
-                    path: "/work-orders/edit",
-                    icon: Pencil,
+                    title: "Criar Campo Personalizado",
+                    description: "Criar um novo campo personalizado.",
+                    path: "/settings/custom-fields",
+                    icon: Settings2,
                 },
                 {
                     title: "Listar",

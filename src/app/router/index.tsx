@@ -19,6 +19,8 @@ import { EditClientPage } from "../../modules/clients/pages/EditClientPage";
 // Work Orders Routes
 import { CreateWorkOrderPage } from "../../modules/work-orders/pages/CreateWorkOrderPage";
 import { EditWorkOrderPage } from "../../modules/work-orders/pages/EditWorkOrderPage";
+import { WorkOrderDetailsPage } from "../../modules/work-orders/pages/WorkOrderDetailsPage";
+import { CustomFieldsPage } from "../../modules/custom-fields/pages/CustomFieldsPage";
 
 export const router = createBrowserRouter([
     {
@@ -121,7 +123,27 @@ export const router = createBrowserRouter([
             </ProtectedRoute>
         )
     },
-
+    {
+        path: "/work-orders/:id/details",
+        element: (
+            <ProtectedRoute>
+                <AppLayout>
+                    <WorkOrderDetailsPage />
+                </AppLayout>
+            </ProtectedRoute>
+        )
+    },
+    {
+        path: "/settings/custom-fields",
+        element: (
+            <ProtectedRoute>
+                <AppLayout>
+                    <CustomFieldsPage />
+                </AppLayout>
+            </ProtectedRoute>
+        )
+    },
+  
 
 
 
