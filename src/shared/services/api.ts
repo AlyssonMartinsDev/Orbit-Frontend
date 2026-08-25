@@ -34,7 +34,7 @@ api.interceptors.response.use(
     },
     (error) => {
         if (error.response && error.response.status === 401) {
-            sessionStorage.removeItem("orbit_user");
+            localStorage.removeItem("orbit_token");
             // Redirecionar para a página de login
             window.location.href = "/login";
         }

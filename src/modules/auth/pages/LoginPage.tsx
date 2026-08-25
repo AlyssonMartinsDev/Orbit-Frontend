@@ -20,6 +20,7 @@ export function LoginPage() {
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   // Funções 
 
@@ -147,10 +148,12 @@ export function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 py-3 text-base font-semibold text-white transition hover:opacity-90"
+                disabled={isLoading}
+                
+                className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 py-3 text-base font-semibold text-white transition hover:opacity-90 cursor-pointer disabled:cursor-not-allowed"
 
               >
-                Entrar
+                {isLoading ? "Validando..." : "Entrar"}
               </button>
             </form>
           </div>

@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { LoginPage } from "../../modules/auth/pages/LoginPage";
 import { DashboardPage } from "../../modules/dashboard/pages/DashboardPage";
 import { ProtectedRoute } from "./guards/ProtectedRoute";
+import { GuestRoute } from "../../modules/auth/components/GuestRoute";
 import { AppLayout } from "../../shared/layouts/AppLayout";
 
 // Rotas
@@ -29,7 +30,11 @@ export const router = createBrowserRouter([
     },
     {
         path: "/login",
-        element: <LoginPage />,
+        element: (
+            <GuestRoute>
+                <LoginPage />
+            </GuestRoute>
+        ),
     },
 
     {
@@ -90,7 +95,7 @@ export const router = createBrowserRouter([
                     <EditClientPage />
                 </AppLayout>
             </ProtectedRoute>
-        ),  
+        ),
     },
     {
         path: "/clients/list",
@@ -143,7 +148,7 @@ export const router = createBrowserRouter([
             </ProtectedRoute>
         )
     },
-  
+
 
 
 
