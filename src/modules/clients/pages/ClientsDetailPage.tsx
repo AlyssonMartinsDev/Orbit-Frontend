@@ -1,14 +1,30 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Mail, Phone, UserRound } from "lucide-react";
+
+import {
+    ArrowLeft,
+    CircleDollarSign,
+    ClipboardCheck,
+    ClipboardList,
+    Mail,
+    Phone,
+    UserRound,
+} from "lucide-react";
 
 import { ClientService } from "../services/client.service";
 import { useClientStore } from "../../../shared/store/client.store";
 import { Loading } from "../../../shared/components/loading";
 
+
 export function ClientDetailsPage() {
     const { id } = useParams();
+
     const navigate = useNavigate();
+
+
+    // ====================================================
+    // CLIENTE SELECIONADO
+    // ====================================================
 
     const selectedClient = useClientStore(
         (state) => state.selectedClient
@@ -22,23 +38,32 @@ export function ClientDetailsPage() {
         (state) => state.clearSelectedClient
     );
 
+
+    // ====================================================
+    // CARREGAMENTO
+    // ====================================================
+
     useEffect(() => {
         const loadClientDetails = async () => {
-
-
             if (!id) {
                 return;
             }
 
-            const response = await ClientService.getDetails(
-                Number(id)
-            );
+            const response =
+                await ClientService.getDetails(
+                    Number(id)
+                );
 
-            if (!response.success || !response.data) {
+            if (
+                !response.success ||
+                !response.data
+            ) {
                 return;
             }
 
-            setSelectedClient(response.data);
+            setSelectedClient(
+                response.data
+            );
         };
 
         void loadClientDetails();
@@ -52,226 +77,782 @@ export function ClientDetailsPage() {
         clearSelectedClient,
     ]);
 
+
+    // ====================================================
+    // LOADING
+    // ====================================================
+
     if (!selectedClient) {
         return (
             <Loading message="Carregando dados do cliente..." />
         );
     }
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        }).format(value);
+
+    // ====================================================
+    // FORMATADORES
+    // ====================================================
+
+    const formatCurrency = (
+        value: number
+    ) => {
+        return new Intl.NumberFormat(
+            "pt-BR",
+            {
+                style: "currency",
+                currency: "BRL",
+            }
+        ).format(value);
     };
 
-    const formatDate = (date: string) => {
-        return new Intl.DateTimeFormat("pt-BR").format(
+
+    const formatDate = (
+        date: string
+    ) => {
+        return new Intl.DateTimeFormat(
+            "pt-BR"
+        ).format(
             new Date(date)
         );
     };
 
+
     return (
-        <section className="w-full px-4 py-6 sm:px-6 lg:px-10">
+        <section
+            className="
+                w-full
+                rounded-2xl
+                border border-[#16345c]/30
+                bg-[radial-gradient(circle_at_top_right,_rgba(37,131,255,0.10),_transparent_30%),linear-gradient(135deg,_#051020_0%,_#010b1b_55%,_#031126_100%)]
+                px-5 py-6
+                shadow-[0_20px_60px_rgba(0,0,0,0.22)]
+                sm:px-6
+                lg:px-8
+            "
+        >
+            {/* =====================================================
+                VOLTAR
+            ===================================================== */}
+            <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="
+                    mb-6
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-lg
+                    border border-transparent
+                    px-2 py-1.5
+                    text-sm
+                    font-medium
+                    text-[#8290a8]
+                    transition-all
+                    duration-200
 
-            {/* Header */}
+                    hover:border-[#16345c]/30
+                    hover:bg-[#07182d]/55
+                    hover:text-[#f8fafc]
+                "
+            >
+                <ArrowLeft
+                    size={17}
+                    strokeWidth={1.8}
+                />
+
+                Voltar
+            </button>
+
+
+            {/* =====================================================
+                HEADER
+            ===================================================== */}
             <header className="mb-8">
-                <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm text-zinc-400 transition hover:text-white"
-                >
-                    <ArrowLeft size={18} />
-                    Voltar
-                </button>
-
-                <div className="mt-6">
-                    <p className="text-xs uppercase tracking-[0.25em] text-violet-400 sm:text-sm">
-                        Cliente
-                    </p>
-
-                    <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">
-                        {selectedClient.name}
-                    </h1>
-
-                    <p className="mt-2 text-sm text-zinc-400">
-                        Informações, histórico e ordens de serviço vinculadas.
-                    </p>
-                </div>
-            </header>
-
-            {/* Dados do cliente */}
-            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-                <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-300">
-                        <UserRound size={24} />
+                <div className="flex items-center gap-3">
+                    <div
+                        className="
+                            flex
+                            h-10 w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            border border-[#2583ff]/15
+                            bg-[#2583ff]/10
+                            text-[#3692ff]
+                            shadow-[0_0_20px_rgba(37,131,255,0.08)]
+                        "
+                    >
+                        <UserRound
+                            size={20}
+                            strokeWidth={1.8}
+                        />
                     </div>
 
                     <div>
-                        <h2 className="text-xl font-semibold text-white">
+                        <p
+                            className="
+                                text-xs
+                                font-medium
+                                uppercase
+                                tracking-[0.22em]
+                                text-[#3692ff]
+                            "
+                        >
+                            Cliente
+                        </p>
+
+                        <h1
+                            className="
+                                mt-1
+                                text-3xl
+                                font-semibold
+                                tracking-tight
+                                text-[#f8fafc]
+                                sm:text-4xl
+                            "
+                        >
+                            {selectedClient.name}
+                        </h1>
+                    </div>
+                </div>
+
+                <p
+                    className="
+                        mt-3
+                        max-w-2xl
+                        text-sm
+                        leading-6
+                        text-[#8290a8]
+                        sm:text-base
+                    "
+                >
+                    Informações, histórico e ordens de serviço vinculadas.
+                </p>
+            </header>
+
+
+            {/* =====================================================
+                DADOS DO CLIENTE
+            ===================================================== */}
+            <section
+                className="
+                    overflow-hidden
+                    rounded-2xl
+                    border border-[#16345c]/35
+                    bg-[#051020]/70
+                    shadow-[0_16px_45px_rgba(0,0,0,0.14)]
+                "
+            >
+                <div
+                    className="
+                        flex items-center gap-3
+                        border-b border-[#16345c]/25
+                        px-5 py-5
+                        sm:px-6
+                    "
+                >
+                    <div
+                        className="
+                            flex
+                            h-10 w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            border border-[#2583ff]/15
+                            bg-[#2583ff]/10
+                            text-[#3692ff]
+                        "
+                    >
+                        <UserRound
+                            size={19}
+                            strokeWidth={1.8}
+                        />
+                    </div>
+
+                    <div>
+                        <h2
+                            className="
+                                text-lg
+                                font-semibold
+                                text-[#f8fafc]
+                            "
+                        >
                             Dados do cliente
                         </h2>
 
-                        <p className="mt-1 text-sm text-zinc-400">
+                        <p
+                            className="
+                                mt-1
+                                text-sm
+                                text-[#8290a8]
+                            "
+                        >
                             Informações principais do cadastro.
                         </p>
                     </div>
                 </div>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    <div className="flex items-center gap-3 rounded-2xl bg-[#0B1120] p-4">
-                        <Phone
-                            size={18}
-                            className="text-violet-300"
-                        />
 
-                        <div>
-                            <p className="text-xs text-zinc-500">
-                                Telefone
-                            </p>
+                <div className="p-5 sm:p-6">
+                    <div
+                        className="
+                            grid
+                            gap-4
+                            md:grid-cols-2
+                        "
+                    >
+                        {/* TELEFONE */}
+                        <div
+                            className="
+                                flex
+                                items-center
+                                gap-4
+                                rounded-xl
+                                border border-[#16345c]/25
+                                bg-[#010b1b]/35
+                                p-4
+                            "
+                        >
+                            <div
+                                className="
+                                    flex
+                                    h-9 w-9
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-lg
+                                    bg-[#2583ff]/10
+                                    text-[#3692ff]
+                                "
+                            >
+                                <Phone
+                                    size={17}
+                                    strokeWidth={1.8}
+                                />
+                            </div>
 
-                            <p className="mt-1 text-sm text-white">
-                                {selectedClient.phone}
-                            </p>
+                            <div className="min-w-0">
+                                <p
+                                    className="
+                                        text-xs
+                                        text-[#56657d]
+                                    "
+                                >
+                                    Telefone
+                                </p>
+
+                                <p
+                                    className="
+                                        mt-1
+                                        truncate
+                                        text-sm
+                                        font-medium
+                                        text-[#f8fafc]
+                                    "
+                                >
+                                    {selectedClient.phone}
+                                </p>
+                            </div>
+                        </div>
+
+
+                        {/* EMAIL */}
+                        <div
+                            className="
+                                flex
+                                items-center
+                                gap-4
+                                rounded-xl
+                                border border-[#16345c]/25
+                                bg-[#010b1b]/35
+                                p-4
+                            "
+                        >
+                            <div
+                                className="
+                                    flex
+                                    h-9 w-9
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-lg
+                                    bg-[#2583ff]/10
+                                    text-[#3692ff]
+                                "
+                            >
+                                <Mail
+                                    size={17}
+                                    strokeWidth={1.8}
+                                />
+                            </div>
+
+                            <div className="min-w-0">
+                                <p
+                                    className="
+                                        text-xs
+                                        text-[#56657d]
+                                    "
+                                >
+                                    E-mail
+                                </p>
+
+                                <p
+                                    className="
+                                        mt-1
+                                        truncate
+                                        text-sm
+                                        font-medium
+                                        text-[#f8fafc]
+                                    "
+                                >
+                                    {selectedClient.email ||
+                                        "Não informado"}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 rounded-2xl bg-[#0B1120] p-4">
-                        <Mail
-                            size={18}
-                            className="text-violet-300"
-                        />
 
-                        <div>
-                            <p className="text-xs text-zinc-500">
-                                E-mail
+                    {/* OBSERVAÇÕES */}
+                    {selectedClient.notes && (
+                        <div
+                            className="
+                                mt-4
+                                rounded-xl
+                                border border-[#16345c]/25
+                                bg-[#010b1b]/35
+                                p-4
+                            "
+                        >
+                            <p
+                                className="
+                                    text-xs
+                                    font-medium
+                                    uppercase
+                                    tracking-wide
+                                    text-[#56657d]
+                                "
+                            >
+                                Observações
                             </p>
 
-                            <p className="mt-1 text-sm text-white">
-                                {selectedClient.email || "Não informado"}
+                            <p
+                                className="
+                                    mt-2
+                                    text-sm
+                                    leading-6
+                                    text-[#a7b4c8]
+                                "
+                            >
+                                {selectedClient.notes}
                             </p>
                         </div>
-                    </div>
+                    )}
                 </div>
+            </section>
 
-                {selectedClient.notes && (
-                    <div className="mt-4 rounded-2xl bg-[#0B1120] p-4">
-                        <p className="text-xs text-zinc-500">
-                            Observações
+
+            {/* =====================================================
+                RESUMO
+            ===================================================== */}
+            <div
+                className="
+                    mt-6
+                    grid
+                    grid-cols-1
+                    gap-4
+                    sm:grid-cols-2
+                    xl:grid-cols-4
+                "
+            >
+                {/* TOTAL */}
+                <div
+                    className="
+                        rounded-2xl
+                        border border-[#16345c]/30
+                        bg-[#051020]/70
+                        p-5
+                    "
+                >
+                    <div className="flex items-center justify-between">
+                        <p
+                            className="
+                                text-sm
+                                text-[#8290a8]
+                            "
+                        >
+                            Total de OS
                         </p>
 
-                        <p className="mt-2 text-sm leading-6 text-zinc-300">
-                            {selectedClient.notes}
-                        </p>
+                        <ClipboardList
+                            size={17}
+                            strokeWidth={1.8}
+                            className="text-[#56657d]"
+                        />
                     </div>
-                )}
-            </div>
 
-            {/* Resumo */}
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-sm text-zinc-400">
-                        Total de OS
-                    </p>
-
-                    <p className="mt-3 text-2xl font-bold">
-                        {selectedClient.summary.total_work_orders}
-                    </p>
-                </div>
-
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-sm text-zinc-400">
-                        Em aberto
-                    </p>
-
-                    <p className="mt-3 text-2xl font-bold text-violet-300">
-                        {selectedClient.summary.open_work_orders}
+                    <p
+                        className="
+                            mt-3
+                            text-2xl
+                            font-semibold
+                            text-[#f8fafc]
+                        "
+                    >
+                        {
+                            selectedClient.summary
+                                .total_work_orders
+                        }
                     </p>
                 </div>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-sm text-zinc-400">
-                        Finalizadas
-                    </p>
 
-                    <p className="mt-3 text-2xl font-bold text-emerald-300">
-                        {selectedClient.summary.finished_work_orders}
+                {/* EM ABERTO */}
+                <div
+                    className="
+                        rounded-2xl
+                        border border-[#16345c]/30
+                        bg-[#051020]/70
+                        p-5
+                    "
+                >
+                    <div className="flex items-center justify-between">
+                        <p
+                            className="
+                                text-sm
+                                text-[#8290a8]
+                            "
+                        >
+                            Em aberto
+                        </p>
+
+                        <ClipboardList
+                            size={17}
+                            strokeWidth={1.8}
+                            className="text-[#3692ff]"
+                        />
+                    </div>
+
+                    <p
+                        className="
+                            mt-3
+                            text-2xl
+                            font-semibold
+                            text-[#3692ff]
+                        "
+                    >
+                        {
+                            selectedClient.summary
+                                .open_work_orders
+                        }
                     </p>
                 </div>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-sm text-zinc-400">
-                        Valor em serviços
-                    </p>
 
-                    <p className="mt-3 text-2xl font-bold">
+                {/* FINALIZADAS */}
+                <div
+                    className="
+                        rounded-2xl
+                        border border-[#16345c]/30
+                        bg-[#051020]/70
+                        p-5
+                    "
+                >
+                    <div className="flex items-center justify-between">
+                        <p
+                            className="
+                                text-sm
+                                text-[#8290a8]
+                            "
+                        >
+                            Finalizadas
+                        </p>
+
+                        <ClipboardCheck
+                            size={17}
+                            strokeWidth={1.8}
+                            className="text-[#3692ff]"
+                        />
+                    </div>
+
+                    <p
+                        className="
+                            mt-3
+                            text-2xl
+                            font-semibold
+                            text-[#f8fafc]
+                        "
+                    >
+                        {
+                            selectedClient.summary
+                                .finished_work_orders
+                        }
+                    </p>
+                </div>
+
+
+                {/* VALOR TOTAL */}
+                <div
+                    className="
+                        rounded-2xl
+                        border border-[#16345c]/30
+                        bg-[#051020]/70
+                        p-5
+                    "
+                >
+                    <div className="flex items-center justify-between">
+                        <p
+                            className="
+                                text-sm
+                                text-[#8290a8]
+                            "
+                        >
+                            Valor em serviços
+                        </p>
+
+                        <CircleDollarSign
+                            size={17}
+                            strokeWidth={1.8}
+                            className="text-[#3692ff]"
+                        />
+                    </div>
+
+                    <p
+                        className="
+                            mt-3
+                            text-2xl
+                            font-semibold
+                            text-[#f8fafc]
+                        "
+                    >
                         {formatCurrency(
-                            selectedClient.summary.total_services_value
+                            selectedClient.summary
+                                .total_services_value
                         )}
                     </p>
                 </div>
             </div>
 
-            {/* Ordens de serviço */}
-            <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-                <h2 className="text-xl font-semibold text-white">
-                    Ordens de Serviço
-                </h2>
 
-                <p className="mt-1 text-sm text-zinc-400">
-                    Histórico de serviços vinculados a este cliente.
-                </p>
+            {/* =====================================================
+                ORDENS DE SERVIÇO
+            ===================================================== */}
+            <section
+                className="
+                    mt-6
+                    overflow-hidden
+                    rounded-2xl
+                    border border-[#16345c]/35
+                    bg-[#051020]/70
+                    shadow-[0_16px_45px_rgba(0,0,0,0.14)]
+                "
+            >
+                {/* HEADER */}
+                <div
+                    className="
+                        flex items-center gap-3
+                        border-b border-[#16345c]/25
+                        px-5 py-5
+                        sm:px-6
+                    "
+                >
+                    <div
+                        className="
+                            flex
+                            h-10 w-10
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            border border-[#2583ff]/15
+                            bg-[#2583ff]/10
+                            text-[#3692ff]
+                        "
+                    >
+                        <ClipboardList
+                            size={19}
+                            strokeWidth={1.8}
+                        />
+                    </div>
 
-                <div className="mt-5 space-y-4">
-                    {selectedClient.work_orders.length ? (
-                        selectedClient.work_orders.map(
-                            (workOrder) => (
-                                <div
-                                    key={workOrder.id}
-                                    className="flex flex-col gap-4 rounded-2xl bg-[#0B1120] p-4 sm:flex-row sm:items-center sm:justify-between"
-                                >
-                                    <div>
-                                        <p className="font-medium text-white">
-                                            {workOrder.title}
-                                        </p>
+                    <div>
+                        <h2
+                            className="
+                                text-lg
+                                font-semibold
+                                text-[#f8fafc]
+                            "
+                        >
+                            Ordens de serviço
+                        </h2>
 
-                                        <p className="mt-1 text-sm text-zinc-500">
-                                            Criada em{" "}
-                                            {formatDate(
-                                                workOrder.created_at
-                                            )}
-                                        </p>
-                                    </div>
+                        <p
+                            className="
+                                mt-1
+                                text-sm
+                                text-[#8290a8]
+                            "
+                        >
+                            Histórico de serviços vinculados a este cliente.
+                        </p>
+                    </div>
+                </div>
 
-                                    <div className="flex items-center justify-between gap-6 sm:text-right">
-                                        <div>
-                                            <p className="text-xs text-violet-300">
-                                                {workOrder.status_service}
+
+                {/* =================================================
+                    LISTA COM ALTURA MÁXIMA
+                ================================================= */}
+                <div
+                    className="
+                        max-h-[520px]
+                        overflow-y-auto
+                        p-5
+                        sm:p-6
+                    "
+                >
+                    <div className="space-y-3">
+                        {selectedClient.work_orders.length ? (
+                            selectedClient.work_orders.map(
+                                (workOrder) => (
+                                    <div
+                                        key={workOrder.id}
+                                        className="
+                                            flex
+                                            flex-col
+                                            gap-4
+                                            rounded-xl
+                                            border border-[#16345c]/25
+                                            bg-[#010b1b]/35
+                                            p-4
+                                            transition-all
+                                            duration-200
+
+                                            hover:border-[#2583ff]/20
+                                            hover:bg-[#07182d]/45
+
+                                            sm:flex-row
+                                            sm:items-center
+                                            sm:justify-between
+                                        "
+                                    >
+                                        <div className="min-w-0">
+                                            <p
+                                                className="
+                                                    truncate
+                                                    text-sm
+                                                    font-medium
+                                                    text-[#f8fafc]
+                                                "
+                                            >
+                                                {workOrder.title}
                                             </p>
 
-                                            <p className="mt-1 text-xs text-zinc-500">
-                                                {workOrder.status_payment}
+                                            <p
+                                                className="
+                                                    mt-1
+                                                    text-xs
+                                                    text-[#56657d]
+                                                "
+                                            >
+                                                Criada em{" "}
+                                                {formatDate(
+                                                    workOrder.created_at
+                                                )}
                                             </p>
                                         </div>
 
-                                        <p className="font-semibold text-white">
-                                            {formatCurrency(
-                                                workOrder.price
-                                            )}
-                                        </p>
+
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                justify-between
+                                                gap-6
+                                                sm:shrink-0
+                                                sm:text-right
+                                            "
+                                        >
+                                            <div>
+                                                <p
+                                                    className="
+                                                        text-xs
+                                                        font-medium
+                                                        text-[#3692ff]
+                                                    "
+                                                >
+                                                    {
+                                                        workOrder.status_service
+                                                    }
+                                                </p>
+
+                                                <p
+                                                    className="
+                                                        mt-1
+                                                        text-xs
+                                                        text-[#8290a8]
+                                                    "
+                                                >
+                                                    {
+                                                        workOrder.status_payment
+                                                    }
+                                                </p>
+                                            </div>
+
+                                            <p
+                                                className="
+                                                    font-semibold
+                                                    text-[#f8fafc]
+                                                "
+                                            >
+                                                {formatCurrency(
+                                                    workOrder.price
+                                                )}
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
+                                )
                             )
-                        )
-                    ) : (
-                        <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center">
-                            <p className="text-sm text-zinc-400">
-                                Nenhuma ordem de serviço vinculada a este cliente.
-                            </p>
-                        </div>
-                    )}
+                        ) : (
+                            <div
+                                className="
+                                    flex
+                                    min-h-36
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    border border-dashed border-[#16345c]/40
+                                    bg-[#010b1b]/25
+                                    p-6
+                                    text-center
+                                "
+                            >
+                                <div>
+                                    <ClipboardList
+                                        size={24}
+                                        strokeWidth={1.5}
+                                        className="
+                                            mx-auto
+                                            text-[#56657d]
+                                        "
+                                    />
+
+                                    <p
+                                        className="
+                                            mt-3
+                                            text-sm
+                                            text-[#8290a8]
+                                        "
+                                    >
+                                        Nenhuma ordem de serviço vinculada a este cliente.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </section>
         </section>
     );
 }

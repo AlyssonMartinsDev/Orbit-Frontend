@@ -1,22 +1,89 @@
+import { ClipboardList } from "lucide-react";
+
 import { WorkOrderForm } from "../components/WorkOrderForm";
 
 export function CreateWorkOrderPage() {
   return (
-    <section className="w-full px-4 py-6 sm:px-6 lg:px-10">
+    <section
+      className="
+        w-full
+        rounded-2xl
+        border border-[#16345c]/30
+        bg-[radial-gradient(circle_at_top_right,_rgba(37,131,255,0.10),_transparent_30%),linear-gradient(135deg,_#051020_0%,_#010b1b_55%,_#031126_100%)]
+        px-5 py-6
+        shadow-[0_20px_60px_rgba(0,0,0,0.22)]
+        sm:px-6
+        lg:px-8
+      "
+    >
+      {/* =========================================================
+          HEADER
+      ========================================================= */}
       <header>
-        <p className="text-xs uppercase tracking-[0.25em] text-violet-400 sm:text-sm">
-          Ordens de Serviço
-        </p>
+        <div className="flex items-center gap-3">
+          <div
+            className="
+              flex h-10 w-10
+              items-center
+              justify-center
+              rounded-xl
+              border border-[#2583ff]/15
+              bg-[#2583ff]/10
+              text-[#3692ff]
+              shadow-[0_0_20px_rgba(37,131,255,0.08)]
+            "
+          >
+            <ClipboardList
+              size={20}
+              strokeWidth={1.8}
+            />
+          </div>
 
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-          Criar Ordem de Serviço
-        </h1>
+          <div>
+            <p
+              className="
+                text-xs
+                font-medium
+                uppercase
+                tracking-[0.22em]
+                text-[#3692ff]
+              "
+            >
+              Ordens de serviço
+            </p>
 
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+            <h1
+              className="
+                mt-1
+                text-3xl
+                font-semibold
+                tracking-tight
+                text-[#f8fafc]
+                sm:text-4xl
+              "
+            >
+              Criar Ordem de Serviço
+            </h1>
+          </div>
+        </div>
+
+        <p
+          className="
+            mt-3
+            max-w-2xl
+            text-sm
+            leading-6
+            text-[#8290a8]
+            sm:text-base
+          "
+        >
           Cadastre uma nova ordem de serviço e vincule-a a um cliente.
         </p>
       </header>
 
+      {/* =========================================================
+          FORM
+      ========================================================= */}
       <div className="mt-8">
         <WorkOrderForm />
       </div>
