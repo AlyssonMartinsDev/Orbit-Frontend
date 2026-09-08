@@ -89,8 +89,10 @@ export function DashboardPage() {
 
 
     if (isLoading && !summary) {
-        return <Loading message="Carregando resumo do dashboard..." />;
+        return <Loading message="Carregando resumo do dashboard..." fullScreen />;
     }
+
+
 
 
     // ====================================================
