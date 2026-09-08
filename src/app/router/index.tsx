@@ -23,6 +23,15 @@ import { EditWorkOrderPage } from "../../modules/work-orders/pages/EditWorkOrder
 import { WorkOrderDetailsPage } from "../../modules/work-orders/pages/WorkOrderDetailsPage";
 import { CustomFieldsPage } from "../../modules/custom-fields/pages/CustomFieldsPage";
 
+
+// Settings Routes
+// Settings Routes
+import { SettingsPage } from "../../modules/settings/pages/SettingsPage";
+import { OrganizationSettings } from "../../modules/settings/components/OrganizationSettings";
+import { UsersSettings } from "../../modules/settings/components/UsersSettings";
+import { WorkOrderSettings } from "../../modules/settings/components/WorkOrderSettings";
+import { AccountSettings } from "../../modules/settings/components/AccountSettings";
+
 export const router = createBrowserRouter([
     {
         path: "/",
@@ -147,6 +156,34 @@ export const router = createBrowserRouter([
                 </AppLayout>
             </ProtectedRoute>
         )
+    },
+    {
+        path: "/settings",
+        element: (
+            <ProtectedRoute>
+                <AppLayout>
+                    <SettingsPage />
+                </AppLayout>
+            </ProtectedRoute>
+        ),
+        children: [
+            {
+                path: "organization",
+                element: <OrganizationSettings />,
+            },
+            {
+                path: "users",
+                element: <UsersSettings />,
+            },
+            {
+                path: "work-orders",
+                element: <WorkOrderSettings />,
+            },
+            {
+                path: "account",
+                element: <AccountSettings />,
+            },
+        ],
     },
 
 
