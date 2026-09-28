@@ -1,4 +1,8 @@
 import type { ApiResponse } from "../../../shared/types/api.types";
+import type {
+  PaymentStatus,
+  WorkOrderStatus,
+} from "../../work-orders/types/work-order.types";
 
 /* ===========================
  * Dashboard Cards
@@ -29,8 +33,8 @@ export interface DashboardRecentWorkOrder {
   id: number;
   client_name: string;
   title: string;
-  status_service: string;
-  status_payment: string;
+  status_service: WorkOrderStatus;
+  status_payment: PaymentStatus;
   price: number;
   created_at: string;
 }

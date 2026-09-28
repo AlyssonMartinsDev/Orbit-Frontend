@@ -18,8 +18,8 @@ export interface WorkOrderClientResponse {
 export interface WorkOrderDataRequest {
     title: string;
     description?: string;
-    status_service: string;
-    status_payment: string;
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
     price: number
 }
 
@@ -47,9 +47,10 @@ export interface WorkOrderResponse {
     user_id: number;
     title: string;
     description: string;
-    status_service: string;
-    status_payment: string;
-    price: number;
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
+    custom_values: WorkOrderCustomValue[];
+    price: string;
     finished_at: string | null;
     created_at: string;
     updated_at: string;
@@ -97,8 +98,8 @@ export interface WorkOrderDetailsResponse {
     user_id: number;
     title: string;
     description: string;
-    status_service: string;
-    status_payment: string;
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
     custom_values: WorkOrderCustomValue[];
     price: string;
     finished_at: string | null;

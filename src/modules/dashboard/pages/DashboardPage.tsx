@@ -601,6 +601,7 @@ export function DashboardPage() {
                 workOrder={selectedWorkOrder}
                 onClose={handleCloseWorkOrderModal}
                 onView={handleViewWorkOrder}
+                onUpdated={() => loadSummary(true)}
             />
 
             <WorkOrderDetailsModal

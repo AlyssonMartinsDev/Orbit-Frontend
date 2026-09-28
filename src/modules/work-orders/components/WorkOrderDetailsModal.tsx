@@ -12,12 +12,26 @@ import { useNavigate } from "react-router-dom";
 
 import { Modal } from "../../../shared/components/modal";
 
-import type { DashboardRecentWorkOrder } from "../../dashboard/types/dashboard.types";
+import type {
+    PaymentStatus,
+    WorkOrderStatus,
+} from "../types/work-order.types";
 
+export interface WorkOrderDetailsItem {
+    id: number;
+    title: string;
+    client_name: string;
+
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
+
+    price: string | number;
+    created_at: string;
+}
 
 interface WorkOrderDetailsModalProps {
     open: boolean;
-    workOrder: DashboardRecentWorkOrder | null;
+    workOrder: WorkOrderDetailsItem | null;
     onClose: () => void;
 }
 
@@ -55,9 +69,8 @@ export function WorkOrderDetailsModal({
     // ====================================================
     // FORMATADORES
     // ====================================================
-
     const formatCurrency = (
-        value: number
+        value: string | number
     ) => {
         return new Intl.NumberFormat(
             "pt-BR",
@@ -65,9 +78,8 @@ export function WorkOrderDetailsModal({
                 style: "currency",
                 currency: "BRL",
             }
-        ).format(value);
+        ).format(Number(value));
     };
-
 
     const formatDate = (
         value: string

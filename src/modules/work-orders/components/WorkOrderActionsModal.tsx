@@ -1,6 +1,7 @@
 // Services
 import { WorkOrderService } from "../services/work-order.service";
 
+
 // Icons
 import {
     CheckCircle2,
@@ -17,19 +18,30 @@ import { useNavigate } from "react-router-dom";
 import { Modal } from "../../../shared/components/modal";
 
 // Types
-import type { DashboardRecentWorkOrder } from "../../dashboard/types/dashboard.types";
+import type {
+    PaymentStatus,
+    WorkOrderStatus,
+} from "../types/work-order.types";
 import type { UpdateWorkOrderRequest } from "../types/work-order.types";
 
 // Stores
 import { useMessageStore } from "../../../shared/store/message.store";
-import { useDashboardStore } from "../../../shared/store/dashboard.store";
+
+interface WorkOrderActionsItem {
+    id: number;
+    title: string;
+    client_name: string;
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
+}
 
 
 interface WorkOrderActionsModalProps {
     open: boolean;
-    workOrder: DashboardRecentWorkOrder | null;
+    workOrder: WorkOrderActionsItem | null;
     onClose: () => void;
     onView: () => void;
+    onUpdated?: () => void;
 }
 
 
@@ -38,14 +50,13 @@ export function WorkOrderActionsModal({
     workOrder,
     onClose,
     onView,
+    onUpdated,
 }: WorkOrderActionsModalProps) {
     const showMessage = useMessageStore(
         (state) => state.showMessage
     );
 
-    const loadSummary = useDashboardStore(
-        (state) => state.loadSummary
-    );
+
 
     const navigate = useNavigate();
 
@@ -101,7 +112,7 @@ export function WorkOrderActionsModal({
             return;
         }
 
-        await loadSummary(true);
+        await onUpdated?.();
 
         showMessage(
             `Ordem de serviço #${workOrder.id} atualizada com sucesso!`,
@@ -128,7 +139,7 @@ export function WorkOrderActionsModal({
             return;
         }
 
-        await loadSummary(true);
+        await onUpdated?.();
 
         showMessage(
             `Ordem de serviço #${workOrder.id} excluída com sucesso!`,
