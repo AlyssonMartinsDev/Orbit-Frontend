@@ -105,3 +105,42 @@ export interface WorkOrderDetailsResponse {
     created_at: string;
     updated_at: string;
 }
+
+// Representa cada ordem de serviço exibida
+// na página de acompanhamento.
+export interface WorkOrderListItem {
+    id: number;
+    client: WorkOrderClientResponse;
+    title: string;
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
+    price: string;
+    created_at: string;
+    finished_at: string | null;
+}
+
+
+// Informações de paginação retornadas pelo backend.
+export interface WorkOrderPagination {
+    page: number;
+    page_size: number;
+    total: number;
+    total_pages: number;
+}
+
+
+// Quantidades utilizadas nas abas
+// "Geral" e "Pendentes".
+export interface WorkOrderListSummary {
+    all: number;
+    pending: number;
+}
+
+
+// Estrutura completa retornada em "data"
+// pelo endpoint /work_orders/tracking.
+export interface WorkOrderPaginatedResponse {
+    items: WorkOrderListItem[];
+    pagination: WorkOrderPagination;
+    summary: WorkOrderListSummary;
+}
