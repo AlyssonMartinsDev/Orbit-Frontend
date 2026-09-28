@@ -15,6 +15,8 @@ import { useClientStore } from "../../../shared/store/client.store";
 import type {
     CreateWorkOrderRequest,
     WorkOrderResponse,
+    WorkOrderStatus,
+    PaymentStatus,
 } from "../types/work-order.types";
 
 import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
@@ -41,8 +43,8 @@ interface WorkOrderFormState {
     workOrder: {
         title: string;
         description: string;
-        status_service: string;
-        status_payment: string;
+        status_service: WorkOrderStatus;
+        status_payment: PaymentStatus;
         price: number;
     };
 }
@@ -144,7 +146,21 @@ export function WorkOrderForm({
         useState<WorkOrderFormState>(getInitialFormData);
 
     const [customFieldValues, setCustomFieldValues] =
-        useState<Record<number, string>>({});
+        useState<Record<number, string>>(() => {
+            // Na criação não existem valores anteriores.
+            if (mode !== "edit" || !workOrder) {
+                return {};
+            }
+
+            // Na edição transforma os custom_values da OS em:
+            // { [field_definition_id]: value }
+            return Object.fromEntries(
+                workOrder.custom_values.map((customValue) => [
+                    customValue.field_definition.id,
+                    customValue.value ?? "",
+                ])
+            );
+        });
 
 
     // ====================================================
@@ -281,7 +297,7 @@ export function WorkOrderForm({
             mode === "edit" && workOrder
                 ? await WorkOrderService.update(
                     workOrder.id,
-                    payload
+                    workOrderPayload
                 )
                 : await WorkOrderService.create(
                     payload
