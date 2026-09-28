@@ -22,7 +22,7 @@ import { CreateWorkOrderPage } from "../../modules/work-orders/pages/CreateWorkO
 import { EditWorkOrderPage } from "../../modules/work-orders/pages/EditWorkOrderPage";
 import { WorkOrderDetailsPage } from "../../modules/work-orders/pages/WorkOrderDetailsPage";
 import { CustomFieldsPage } from "../../modules/custom-fields/pages/CustomFieldsPage";
-
+import { WorkOrderTrackingPage } from "../../modules/work-orders/pages/WorkOrderTrackingPage";
 
 // Settings Routes
 // Settings Routes
@@ -186,7 +186,16 @@ export const router = createBrowserRouter([
         ],
     },
 
-
+    {
+        path: "/work-orders/tracking",
+        element: (
+            <ProtectedRoute>
+                <AppLayout>
+                    <WorkOrderTrackingPage />
+                </AppLayout>
+            </ProtectedRoute>
+        ),
+    },
 
 
 

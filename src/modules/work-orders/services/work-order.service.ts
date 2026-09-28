@@ -7,10 +7,32 @@ import type {
     CreateWorkOrderRequest,
     WorkOrderResponse,
     UpdateWorkOrderRequest,
-    WorkOrderDetailsResponse
+    WorkOrderDetailsResponse,
+    WorkOrderPaginatedResponse,
+    WorkOrderStatus,
+    PaymentStatus
 } from "../types/work-order.types"
 
 
+interface WorkOrderTrackingParams {
+    // Paginação
+    page?: number;
+    page_size?: number;
+
+    // Aba selecionada
+    tab?: "all" | "pending";
+
+    // Busca por título/cliente
+    search?: string;
+
+    // Filtro por período
+    start_date?: string;
+    end_date?: string;
+
+    // Filtro por status
+    status_service?: WorkOrderStatus;
+    status_payment?: PaymentStatus;
+}
 export class WorkOrderService {
     static async create(
         workOrderData: CreateWorkOrderRequest
@@ -54,6 +76,22 @@ export class WorkOrderService {
     ): Promise<ApiResponse<WorkOrderResponse>> {
         const response = await api.delete<ApiResponse<WorkOrderResponse>>(
             `/work_orders/${id}`
+        );
+
+        return response.data;
+    }
+
+    static async getTracking(
+        params: WorkOrderTrackingParams = {}
+    ): Promise<ApiResponse<WorkOrderPaginatedResponse>> {
+
+        const response = await api.get<
+            ApiResponse<WorkOrderPaginatedResponse>
+        >(
+            "/work_orders/tracking",
+            {
+                params
+            }
         );
 
         return response.data;
