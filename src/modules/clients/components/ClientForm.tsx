@@ -12,6 +12,7 @@ import {
 
 import { ClientService } from "../services/client.service";
 
+import { PhoneInput } from "../../../shared/components/inputs";
 import { useMessageStore } from "../../../shared/store/message.store";
 import { useClientStore } from "../../../shared/store/client.store";
 
@@ -200,6 +201,7 @@ export function ClientForm({
       {/* =========================================================
           DADOS DO CLIENTE
       ========================================================= */}
+
       <section
         className="
           overflow-hidden
@@ -210,6 +212,7 @@ export function ClientForm({
         "
       >
         {/* HEADER DO CARD */}
+
         <div
           className="
             flex
@@ -271,6 +274,7 @@ export function ClientForm({
         {/* =======================================================
             CAMPOS PRINCIPAIS
         ======================================================= */}
+
         <div className="p-5 sm:p-6">
           <div
             className="
@@ -281,6 +285,7 @@ export function ClientForm({
             "
           >
             {/* Nome */}
+
             <div>
               <label
                 htmlFor="client_name"
@@ -321,6 +326,7 @@ export function ClientForm({
 
 
             {/* Telefone */}
+
             <div>
               <label
                 htmlFor="client_phone"
@@ -342,16 +348,25 @@ export function ClientForm({
                   "
                 />
 
-                <input
+                {/*
+                 * O PhoneInput exibe o telefone formatado,
+                 * mas devolve para o formulário somente números.
+                 *
+                 * Exibição:
+                 * (43) 99999-8888
+                 *
+                 * formData.phone:
+                 * 43999998888
+                 */}
+                <PhoneInput
                   id="client_phone"
-                  type="text"
                   required
                   placeholder="(00) 00000-0000"
                   value={formData.phone}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     handleChange(
                       "phone",
-                      event.target.value
+                      value
                     )
                   }
                   className={`${inputClass} pl-11`}
@@ -361,6 +376,7 @@ export function ClientForm({
 
 
             {/* Email */}
+
             <div>
               <label
                 htmlFor="client_email"
@@ -401,6 +417,7 @@ export function ClientForm({
 
 
             {/* CPF */}
+
             <div>
               <label
                 htmlFor="client_cpf"
@@ -431,6 +448,7 @@ export function ClientForm({
       {/* =========================================================
           OBSERVAÇÕES
       ========================================================= */}
+
       <section
         className="
           overflow-hidden
@@ -441,6 +459,7 @@ export function ClientForm({
         "
       >
         {/* HEADER */}
+
         <div
           className="
             flex
@@ -495,6 +514,7 @@ export function ClientForm({
 
 
         {/* TEXTAREA */}
+
         <div className="p-5 sm:p-6">
           <label
             htmlFor="client_notes"
@@ -526,6 +546,7 @@ export function ClientForm({
       {/* =========================================================
           AÇÕES
       ========================================================= */}
+
       <div
         className="
           flex

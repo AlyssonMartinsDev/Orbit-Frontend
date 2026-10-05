@@ -14,6 +14,7 @@ import {
 import { ClientService } from "../services/client.service";
 import { useClientStore } from "../../../shared/store/client.store";
 import { Loading } from "../../../shared/components/loading";
+import { WhatsAppButton } from "../../../shared/buttons";
 
 
 export function ClientDetailsPage() {
@@ -336,24 +337,20 @@ export function ClientDetailsPage() {
                             <div className="min-w-0">
                                 <p
                                     className="
-                                        text-xs
-                                        text-[#56657d]
-                                    "
+                                    text-xs
+                                    text-[#56657d]
+                                "
                                 >
                                     Telefone
                                 </p>
 
-                                <p
-                                    className="
-                                        mt-1
-                                        truncate
-                                        text-sm
-                                        font-medium
-                                        text-[#f8fafc]
-                                    "
-                                >
-                                    {selectedClient.phone}
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p>{selectedClient.phone}</p>
+
+                                    <WhatsAppButton
+                                        phone={selectedClient.phone}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -853,6 +850,6 @@ export function ClientDetailsPage() {
                     </div>
                 </div>
             </section>
-        </section>
+        </section >
     );
 }

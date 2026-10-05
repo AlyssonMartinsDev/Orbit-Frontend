@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { PhoneInput } from "../../../shared/components/inputs";
+import { FaWhatsapp } from "react-icons/fa";
 
 import {
     CircleDollarSign,
@@ -140,6 +142,8 @@ export function WorkOrderForm({
             },
         };
     };
+
+
 
 
     const [formData, setFormData] =
@@ -338,6 +342,23 @@ export function WorkOrderForm({
         navigate("/dashboard");
     };
 
+    const handleOpenWhatsApp = () => {
+        const phone = formData.client.phone;
+
+        if (!phone) {
+            return;
+        }
+
+        const whatsappPhone = phone.startsWith("55")
+            ? phone
+            : `55${phone}`;
+
+        window.open(
+            `https://wa.me/${whatsappPhone}`,
+            "_blank",
+            "noopener,noreferrer"
+        );
+    };
 
     // ====================================================
     // CLASSES VISUAIS REUTILIZADAS
@@ -609,19 +630,43 @@ export function WorkOrderForm({
                                     Telefone
                                 </label>
 
-                                <input
-                                    id="client_phone"
-                                    type="text"
-                                    value={formData.client.phone}
-                                    onChange={(event) =>
-                                        handleClientChange(
-                                            "phone",
-                                            event.target.value
-                                        )
-                                    }
-                                    placeholder="(00) 00000-0000"
-                                    className={inputClass}
-                                />
+                                <div className="relative">
+                                    <PhoneInput
+                                        id="client_phone"
+                                        required
+                                        value={formData.client.phone}
+                                        onChange={(value) =>
+                                            handleClientChange(
+                                                "phone",
+                                                value
+                                            )
+                                        }
+                                        placeholder="(00) 00000-0000"
+                                        className={`${inputClass} pr-12`}
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenWhatsApp}
+                                        disabled={!formData.client.phone}
+                                        title="Abrir conversa no WhatsApp"
+                                        className="
+                                            absolute
+                                            right-4
+                                            top-1/2
+                                            -translate-y-1/2
+                                            text-emerald-400
+                                            transition-all
+                                            duration-200
+                                            hover:scale-110
+                                            hover:text-emerald-300
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-30
+                                        "
+                                    >
+                                        <FaWhatsapp size={20} />
+                                    </button>
+                                </div>
                             </div>
 
 
