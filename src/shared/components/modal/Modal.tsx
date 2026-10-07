@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 
 import type { ModalProps } from "./modal.types";
 
+
 export function Modal({
     open,
     title,
@@ -10,77 +11,143 @@ export function Modal({
     children,
     onClose,
 }: ModalProps) {
+
     useEffect(() => {
         if (!open) {
             return;
         }
 
-        const handleKeyDown = (event: KeyboardEvent) => {
+        const handleKeyDown = (
+            event: KeyboardEvent
+        ) => {
             if (event.key === "Escape") {
                 onClose();
             }
         };
 
-        document.addEventListener("keydown", handleKeyDown);
+
+        // Impede a página atrás do modal de rolar.
+        const previousOverflow =
+            document.body.style.overflow;
+
+        document.body.style.overflow = "hidden";
+
+        document.addEventListener(
+            "keydown",
+            handleKeyDown
+        );
+
 
         return () => {
-            document.removeEventListener("keydown", handleKeyDown);
+            document.removeEventListener(
+                "keydown",
+                handleKeyDown
+            );
+
+            document.body.style.overflow =
+                previousOverflow;
         };
     }, [open, onClose]);
+
 
     if (!open) {
         return null;
     }
 
+
     const handleOverlayClick = (
         event: React.MouseEvent<HTMLDivElement>
     ) => {
-        if (event.target === event.currentTarget) {
+        if (
+            event.target ===
+            event.currentTarget
+        ) {
             onClose();
         }
     };
 
+
     return (
         <div
             onClick={handleOverlayClick}
-            className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+            className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
         >
+
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="modal-title"
-                className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#080C18] shadow-2xl"
+                className="
+                    flex
+                    max-h-[calc(100vh-2rem)]
+                    w-full
+                    max-w-lg
+                    flex-col
+                    overflow-hidden
+                    rounded-3xl
+                    border
+                    border-[#16345C]/60
+                    bg-[#051020]
+                    shadow-2xl
+                "
             >
-                <header className="flex items-start justify-between border-b border-white/10 p-6">
-                    <div>
+
+                {/* HEADER */}
+                <header className="flex shrink-0 items-start justify-between border-b border-[#16345C]/60 p-6">
+
+                    <div className="min-w-0 pr-4">
+
                         <h2
                             id="modal-title"
-                            className="text-xl font-semibold text-white"
+                            className="text-xl font-semibold text-[#F8FAFC]"
                         >
                             {title}
                         </h2>
 
+
                         {subtitle && (
-                            <p className="mt-1 text-sm text-zinc-400">
+                            <p className="mt-1 text-sm text-[#8290A8]">
                                 {subtitle}
                             </p>
                         )}
+
                     </div>
+
 
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label="Fechar modal"
-                        className="rounded-xl p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white"
+                        className="
+                            shrink-0
+                            rounded-xl
+                            p-2
+                            text-[#8290A8]
+                            transition
+                            hover:bg-[#0A2242]
+                            hover:text-[#F8FAFC]
+                        "
                     >
                         <X size={20} />
                     </button>
+
                 </header>
 
-                <div className="p-6">
+
+                {/* CONTEÚDO COM SCROLL */}
+                <div
+                    className="
+                        min-h-0
+                        flex-1
+                        overflow-y-auto
+                        p-6
+                    "
+                >
                     {children}
                 </div>
+
             </div>
+
         </div>
     );
 }

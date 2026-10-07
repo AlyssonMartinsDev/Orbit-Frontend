@@ -7,23 +7,33 @@ import type {
     CreateCustomFieldRequest,
     WorkOrderCustomValueResponse,
     SaveWorkOrderCustomValuesRequest,
-    UpdateCustomFieldRequest
+    UpdateCustomFieldRequest,
+    CustomFieldModule,
 } from "../types/custom-field.types";
 
 
 export class CustomFieldService {
 
-    static async getAll(): Promise<
-        ApiResponse<CustomFieldDefinitionResponse[]>
-    > {
+    // Busca os campos personalizados.
+    // Quando module for informado, retorna somente os campos daquele módulo.
+    static async getAll(
+        module?: CustomFieldModule
+    ): Promise<ApiResponse<CustomFieldDefinitionResponse[]>> {
+
         const response = await api.get(
-            "/custom-fields"
+            "/custom-fields",
+            {
+                params: module
+                    ? { module }
+                    : undefined,
+            }
         );
 
         return response.data;
     }
 
 
+    // Cria uma nova definição de campo personalizado.
     static async create(
         data: CreateCustomFieldRequest
     ): Promise<ApiResponse<CustomFieldDefinitionResponse>> {
@@ -36,7 +46,8 @@ export class CustomFieldService {
         return response.data;
     }
 
-    // Atualiza um campo personalizado existente
+
+    // Atualiza uma definição de campo personalizado existente.
     static async update(
         customFieldId: number,
         data: UpdateCustomFieldRequest
@@ -50,8 +61,9 @@ export class CustomFieldService {
         return response.data;
     }
 
-    // Exclui definitivamente um campo personalizado
-    // O backend bloqueia a exclusão caso ele já tenha sido usado em uma OS
+
+    // Exclui definitivamente um campo personalizado.
+    // O backend bloqueia a exclusão caso ele já tenha sido utilizado.
     static async delete(
         customFieldId: number
     ): Promise<ApiResponse<null>> {
@@ -63,6 +75,8 @@ export class CustomFieldService {
         return response.data;
     }
 
+
+    // Busca os valores dos campos personalizados de uma OS.
     static async getWorkOrderValues(
         workOrderId: number
     ): Promise<ApiResponse<WorkOrderCustomValueResponse[]>> {
@@ -75,6 +89,7 @@ export class CustomFieldService {
     }
 
 
+    // Salva ou atualiza os valores dos campos personalizados de uma OS.
     static async saveWorkOrderValues(
         workOrderId: number,
         data: SaveWorkOrderCustomValuesRequest
