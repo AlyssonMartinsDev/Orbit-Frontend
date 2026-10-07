@@ -3,29 +3,48 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import {
     ArrowLeft,
+    CalendarDays,
+    CheckCircle2,
     CircleDollarSign,
     ClipboardCheck,
     ClipboardList,
+    ExternalLink,
+    FileText,
+    Hash,
+    Link as LinkIcon,
     Mail,
     Phone,
+    Settings2,
     UserRound,
 } from "lucide-react";
 
 import { ClientService } from "../services/client.service";
+
 import { useClientStore } from "../../../shared/store/client.store";
+import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
+
 import { Loading } from "../../../shared/components/loading";
 import { WhatsAppButton } from "../../../shared/buttons";
 
+import type {
+    CustomFieldDefinitionResponse,
+} from "../../custom-fields/types/custom-field.types";
+
+
+// ============================================================
+// COMPONENTE
+// ============================================================
 
 export function ClientDetailsPage() {
+
     const { id } = useParams();
 
     const navigate = useNavigate();
 
 
-    // ====================================================
+    // ========================================================
     // CLIENTE SELECIONADO
-    // ====================================================
+    // ========================================================
 
     const selectedClient = useClientStore(
         (state) => state.selectedClient
@@ -40,20 +59,37 @@ export function ClientDetailsPage() {
     );
 
 
-    // ====================================================
+    // ========================================================
+    // CUSTOM FIELDS
+    // ========================================================
+
+    const customFields = useCustomFieldStore(
+        (state) => state.customFields
+    );
+
+    const loadCustomFields = useCustomFieldStore(
+        (state) => state.loadCustomFields
+    );
+
+
+    // ========================================================
     // CARREGAMENTO
-    // ====================================================
+    // ========================================================
 
     useEffect(() => {
+
         const loadClientDetails = async () => {
+
             if (!id) {
                 return;
             }
+
 
             const response =
                 await ClientService.getDetails(
                     Number(id)
                 );
+
 
             if (
                 !response.success ||
@@ -62,41 +98,52 @@ export function ClientDetailsPage() {
                 return;
             }
 
+
             setSelectedClient(
                 response.data
             );
         };
 
+
         void loadClientDetails();
+
+        void loadCustomFields();
+
 
         return () => {
             clearSelectedClient();
         };
+
     }, [
         id,
         setSelectedClient,
         clearSelectedClient,
+        loadCustomFields,
     ]);
 
 
-    // ====================================================
+    // ========================================================
     // LOADING
-    // ====================================================
+    // ========================================================
 
     if (!selectedClient) {
+
         return (
-            <Loading message="Carregando dados do cliente..." />
+            <Loading
+                message="Carregando dados do cliente..."
+            />
         );
     }
 
 
-    // ====================================================
+    // ========================================================
     // FORMATADORES
-    // ====================================================
+    // ========================================================
 
     const formatCurrency = (
         value: number
     ) => {
+
         return new Intl.NumberFormat(
             "pt-BR",
             {
@@ -110,6 +157,7 @@ export function ClientDetailsPage() {
     const formatDate = (
         date: string
     ) => {
+
         return new Intl.DateTimeFormat(
             "pt-BR"
         ).format(
@@ -117,6 +165,498 @@ export function ClientDetailsPage() {
         );
     };
 
+
+    const formatCustomDate = (
+        date: string
+    ) => {
+
+        /*
+         * Adicionamos o horário manualmente para evitar
+         * alteração da data causada por timezone.
+         *
+         * Exemplo:
+         * 2026-10-06 -> 06/10/2026
+         */
+
+        const parsedDate =
+            new Date(`${date}T00:00:00`);
+
+
+        if (
+            Number.isNaN(
+                parsedDate.getTime()
+            )
+        ) {
+            return date;
+        }
+
+
+        return new Intl.DateTimeFormat(
+            "pt-BR"
+        ).format(parsedDate);
+    };
+
+
+    const formatPhone = (
+        phone: string
+    ) => {
+
+        const digits =
+            phone.replace(/\D/g, "");
+
+
+        if (digits.length === 11) {
+
+            return digits.replace(
+                /(\d{2})(\d{5})(\d{4})/,
+                "($1) $2-$3"
+            );
+        }
+
+
+        if (digits.length === 10) {
+
+            return digits.replace(
+                /(\d{2})(\d{4})(\d{4})/,
+                "($1) $2-$3"
+            );
+        }
+
+
+        return phone;
+    };
+
+
+    // ========================================================
+    // DEFINIÇÕES DE CUSTOM FIELD DO CLIENTE
+    // ========================================================
+
+    const clientCustomFields =
+        customFields
+            .filter(
+                (customField) =>
+                    customField.module === "CLIENT"
+            )
+            .sort(
+                (a, b) =>
+                    a.display_order -
+                    b.display_order
+            );
+
+
+    // ========================================================
+    // VALORES PERSONALIZADOS DO CLIENTE
+    // ========================================================
+
+    /*
+     * O backend devolve no cliente:
+     *
+     * {
+     *     field_definition_id: 5,
+     *     value: "43999999999"
+     * }
+     *
+     * Aqui relacionamos esse ID com a definição do campo
+     * para descobrir nome, tipo e preset.
+     */
+
+    const customFieldItems =
+        selectedClient.custom_values
+            .map((customValue) => {
+
+                const definition =
+                    clientCustomFields.find(
+                        (customField) =>
+                            customField.id ===
+                            customValue.field_definition_id
+                    );
+
+
+                if (!definition) {
+                    return null;
+                }
+
+
+                return {
+                    definition,
+                    value:
+                        customValue.value ?? "",
+                };
+            })
+            .filter(
+                (
+                    item
+                ): item is {
+                    definition:
+                    CustomFieldDefinitionResponse;
+                    value: string;
+                } => item !== null
+            )
+            .sort(
+                (a, b) =>
+                    a.definition.display_order -
+                    b.definition.display_order
+            );
+
+
+    // ========================================================
+    // ÍCONE DO CUSTOM FIELD
+    // ========================================================
+
+    const renderCustomFieldIcon = (
+        definition:
+            CustomFieldDefinitionResponse
+    ) => {
+
+        switch (
+        definition.preset_type
+        ) {
+
+            case "WHATSAPP":
+            case "PHONE":
+
+                return (
+                    <Phone
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+
+
+            case "EMAIL":
+
+                return (
+                    <Mail
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+
+
+            case "URL":
+
+                return (
+                    <LinkIcon
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+        }
+
+
+        switch (
+        definition.field_type
+        ) {
+
+            case "NUMBER":
+
+                return (
+                    <Hash
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+
+
+            case "DATE":
+
+                return (
+                    <CalendarDays
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+
+
+            case "BOOLEAN":
+
+                return (
+                    <CheckCircle2
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+
+
+            default:
+
+                return (
+                    <FileText
+                        size={17}
+                        strokeWidth={1.8}
+                    />
+                );
+        }
+    };
+
+
+    // ========================================================
+    // CONTEÚDO DO CUSTOM FIELD
+    // ========================================================
+
+    const renderCustomFieldValue = (
+        definition:
+            CustomFieldDefinitionResponse,
+        value: string
+    ) => {
+
+        if (!value) {
+
+            return (
+                <span
+                    className="
+                        text-sm
+                        text-[#56657d]
+                    "
+                >
+                    Não informado
+                </span>
+            );
+        }
+
+
+        // ====================================================
+        // WHATSAPP
+        // ====================================================
+
+        if (
+            definition.preset_type ===
+            "WHATSAPP"
+        ) {
+
+            return (
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-2
+                    "
+                >
+
+                    <span
+                        className="
+                            text-sm
+                            font-medium
+                            text-[#f8fafc]
+                        "
+                    >
+                        {formatPhone(value)}
+                    </span>
+
+
+                    {/*
+                     * O botão usa o valor DESTE custom field.
+                     *
+                     * Portanto:
+                     *
+                     * WhatsApp financeiro -> número financeiro
+                     * WhatsApp suporte    -> número suporte
+                     *
+                     * Não existe vínculo automático com
+                     * selectedClient.phone.
+                     */}
+
+                    <WhatsAppButton
+                        phone={value}
+                    />
+
+                </div>
+            );
+        }
+
+
+        // ====================================================
+        // TELEFONE
+        // ====================================================
+
+        if (
+            definition.preset_type ===
+            "PHONE"
+        ) {
+
+            return (
+                <span
+                    className="
+                        text-sm
+                        font-medium
+                        text-[#f8fafc]
+                    "
+                >
+                    {formatPhone(value)}
+                </span>
+            );
+        }
+
+
+        // ====================================================
+        // EMAIL
+        // ====================================================
+
+        if (
+            definition.preset_type ===
+            "EMAIL"
+        ) {
+
+            return (
+                <a
+                    href={`mailto:${value}`}
+                    className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        break-all
+                        text-sm
+                        font-medium
+                        text-[#f8fafc]
+                        transition-colors
+                        hover:text-[#3692ff]
+                    "
+                >
+                    {value}
+
+                    <ExternalLink
+                        size={14}
+                        strokeWidth={1.8}
+                    />
+                </a>
+            );
+        }
+
+
+        // ====================================================
+        // URL
+        // ====================================================
+
+        if (
+            definition.preset_type ===
+            "URL"
+        ) {
+
+            const href =
+                /^https?:\/\//i.test(value)
+                    ? value
+                    : `https://${value}`;
+
+
+            return (
+                <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        break-all
+                        text-sm
+                        font-medium
+                        text-[#f8fafc]
+                        transition-colors
+                        hover:text-[#3692ff]
+                    "
+                >
+                    {value}
+
+                    <ExternalLink
+                        size={14}
+                        strokeWidth={1.8}
+                    />
+                </a>
+            );
+        }
+
+
+        // ====================================================
+        // DATE
+        // ====================================================
+
+        if (
+            definition.field_type ===
+            "DATE"
+        ) {
+
+            return (
+                <span
+                    className="
+                        text-sm
+                        font-medium
+                        text-[#f8fafc]
+                    "
+                >
+                    {formatCustomDate(value)}
+                </span>
+            );
+        }
+
+
+        // ====================================================
+        // BOOLEAN
+        // ====================================================
+
+        if (
+            definition.field_type ===
+            "BOOLEAN"
+        ) {
+
+            const active =
+                value === "true";
+
+
+            return (
+                <span
+                    className={`
+                        inline-flex
+                        rounded-lg
+                        border
+                        px-2.5
+                        py-1
+                        text-xs
+                        font-medium
+
+                        ${active
+                            ? `
+                                    border-emerald-400/20
+                                    bg-emerald-400/10
+                                    text-emerald-300
+                                `
+                            : `
+                                    border-[#16345c]/35
+                                    bg-[#07182d]/55
+                                    text-[#8290a8]
+                                `
+                        }
+                    `}
+                >
+                    {active
+                        ? "Sim"
+                        : "Não"}
+                </span>
+            );
+        }
+
+
+        // ====================================================
+        // TEXT / NUMBER
+        // ====================================================
+
+        return (
+            <span
+                className="
+                    break-words
+                    text-sm
+                    font-medium
+                    text-[#f8fafc]
+                "
+            >
+                {value}
+            </span>
+        );
+    };
+
+
+    // ========================================================
+    // RENDER
+    // ========================================================
 
     return (
         <section
@@ -131,9 +671,11 @@ export function ClientDetailsPage() {
                 lg:px-8
             "
         >
-            {/* =====================================================
+
+            {/* =================================================
                 VOLTAR
-            ===================================================== */}
+            ================================================= */}
+
             <button
                 type="button"
                 onClick={() => navigate(-1)}
@@ -156,20 +698,25 @@ export function ClientDetailsPage() {
                     hover:text-[#f8fafc]
                 "
             >
+
                 <ArrowLeft
                     size={17}
                     strokeWidth={1.8}
                 />
 
                 Voltar
+
             </button>
 
 
-            {/* =====================================================
+            {/* =================================================
                 HEADER
-            ===================================================== */}
+            ================================================= */}
+
             <header className="mb-8">
+
                 <div className="flex items-center gap-3">
+
                     <div
                         className="
                             flex
@@ -190,7 +737,9 @@ export function ClientDetailsPage() {
                         />
                     </div>
 
+
                     <div>
+
                         <p
                             className="
                                 text-xs
@@ -202,6 +751,7 @@ export function ClientDetailsPage() {
                         >
                             Cliente
                         </p>
+
 
                         <h1
                             className="
@@ -215,8 +765,11 @@ export function ClientDetailsPage() {
                         >
                             {selectedClient.name}
                         </h1>
+
                     </div>
+
                 </div>
+
 
                 <p
                     className="
@@ -230,12 +783,14 @@ export function ClientDetailsPage() {
                 >
                     Informações, histórico e ordens de serviço vinculadas.
                 </p>
+
             </header>
 
 
-            {/* =====================================================
+            {/* =================================================
                 DADOS DO CLIENTE
-            ===================================================== */}
+            ================================================= */}
+
             <section
                 className="
                     overflow-hidden
@@ -245,14 +800,20 @@ export function ClientDetailsPage() {
                     shadow-[0_16px_45px_rgba(0,0,0,0.14)]
                 "
             >
+
+                {/* HEADER */}
+
                 <div
                     className="
-                        flex items-center gap-3
+                        flex
+                        items-center
+                        gap-3
                         border-b border-[#16345c]/25
                         px-5 py-5
                         sm:px-6
                     "
                 >
+
                     <div
                         className="
                             flex
@@ -272,7 +833,9 @@ export function ClientDetailsPage() {
                         />
                     </div>
 
+
                     <div>
+
                         <h2
                             className="
                                 text-lg
@@ -283,6 +846,7 @@ export function ClientDetailsPage() {
                             Dados do cliente
                         </h2>
 
+
                         <p
                             className="
                                 mt-1
@@ -292,11 +856,14 @@ export function ClientDetailsPage() {
                         >
                             Informações principais do cadastro.
                         </p>
+
                     </div>
+
                 </div>
 
 
                 <div className="p-5 sm:p-6">
+
                     <div
                         className="
                             grid
@@ -304,7 +871,9 @@ export function ClientDetailsPage() {
                             md:grid-cols-2
                         "
                     >
+
                         {/* TELEFONE */}
+
                         <div
                             className="
                                 flex
@@ -316,6 +885,7 @@ export function ClientDetailsPage() {
                                 p-4
                             "
                         >
+
                             <div
                                 className="
                                     flex
@@ -334,28 +904,61 @@ export function ClientDetailsPage() {
                                 />
                             </div>
 
+
                             <div className="min-w-0">
+
                                 <p
                                     className="
-                                    text-xs
-                                    text-[#56657d]
-                                "
+                                        text-xs
+                                        text-[#56657d]
+                                    "
                                 >
                                     Telefone
                                 </p>
 
-                                <div className="flex items-center gap-2">
-                                    <p>{selectedClient.phone}</p>
+
+                                <div
+                                    className="
+                                        mt-1
+                                        flex
+                                        items-center
+                                        gap-2
+                                    "
+                                >
+
+                                    <p
+                                        className="
+                                            text-sm
+                                            font-medium
+                                            text-[#f8fafc]
+                                        "
+                                    >
+                                        {formatPhone(
+                                            selectedClient.phone
+                                        )}
+                                    </p>
+
+
+                                    {/*
+                                     * Mantemos o comportamento que
+                                     * já existia no telefone principal.
+                                     */}
 
                                     <WhatsAppButton
-                                        phone={selectedClient.phone}
+                                        phone={
+                                            selectedClient.phone
+                                        }
                                     />
+
                                 </div>
+
                             </div>
+
                         </div>
 
 
                         {/* EMAIL */}
+
                         <div
                             className="
                                 flex
@@ -367,6 +970,7 @@ export function ClientDetailsPage() {
                                 p-4
                             "
                         >
+
                             <div
                                 className="
                                     flex
@@ -385,7 +989,9 @@ export function ClientDetailsPage() {
                                 />
                             </div>
 
+
                             <div className="min-w-0">
+
                                 <p
                                     className="
                                         text-xs
@@ -395,25 +1001,49 @@ export function ClientDetailsPage() {
                                     E-mail
                                 </p>
 
-                                <p
-                                    className="
-                                        mt-1
-                                        truncate
-                                        text-sm
-                                        font-medium
-                                        text-[#f8fafc]
-                                    "
-                                >
-                                    {selectedClient.email ||
-                                        "Não informado"}
-                                </p>
+
+                                {selectedClient.email ? (
+
+                                    <a
+                                        href={`mailto:${selectedClient.email}`}
+                                        className="
+                                            mt-1
+                                            block
+                                            truncate
+                                            text-sm
+                                            font-medium
+                                            text-[#f8fafc]
+                                            transition-colors
+                                            hover:text-[#3692ff]
+                                        "
+                                    >
+                                        {selectedClient.email}
+                                    </a>
+
+                                ) : (
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-sm
+                                            text-[#56657d]
+                                        "
+                                    >
+                                        Não informado
+                                    </p>
+                                )}
+
                             </div>
+
                         </div>
+
                     </div>
 
 
                     {/* OBSERVAÇÕES */}
+
                     {selectedClient.notes && (
+
                         <div
                             className="
                                 mt-4
@@ -423,6 +1053,7 @@ export function ClientDetailsPage() {
                                 p-4
                             "
                         >
+
                             <p
                                 className="
                                     text-xs
@@ -435,6 +1066,7 @@ export function ClientDetailsPage() {
                                 Observações
                             </p>
 
+
                             <p
                                 className="
                                     mt-2
@@ -445,15 +1077,189 @@ export function ClientDetailsPage() {
                             >
                                 {selectedClient.notes}
                             </p>
+
                         </div>
                     )}
+
                 </div>
+
             </section>
 
 
-            {/* =====================================================
+            {/* =================================================
+                CAMPOS PERSONALIZADOS
+            ================================================= */}
+
+            {customFieldItems.length > 0 && (
+
+                <section
+                    className="
+                        mt-6
+                        overflow-hidden
+                        rounded-2xl
+                        border border-[#16345c]/35
+                        bg-[#051020]/70
+                        shadow-[0_16px_45px_rgba(0,0,0,0.14)]
+                    "
+                >
+
+                    {/* HEADER */}
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-3
+                            border-b border-[#16345c]/25
+                            px-5 py-5
+                            sm:px-6
+                        "
+                    >
+
+                        <div
+                            className="
+                                flex
+                                h-10 w-10
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-xl
+                                border border-[#2583ff]/15
+                                bg-[#2583ff]/10
+                                text-[#3692ff]
+                            "
+                        >
+                            <Settings2
+                                size={19}
+                                strokeWidth={1.8}
+                            />
+                        </div>
+
+
+                        <div>
+
+                            <h2
+                                className="
+                                    text-lg
+                                    font-semibold
+                                    text-[#f8fafc]
+                                "
+                            >
+                                Campos personalizados
+                            </h2>
+
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-sm
+                                    text-[#8290a8]
+                                "
+                            >
+                                Informações adicionais deste cliente.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* CAMPOS */}
+
+                    <div className="p-5 sm:p-6">
+
+                        <div
+                            className="
+                                grid
+                                gap-4
+                                md:grid-cols-2
+                            "
+                        >
+
+                            {customFieldItems.map(
+                                ({
+                                    definition,
+                                    value,
+                                }) => (
+
+                                    <div
+                                        key={
+                                            definition.id
+                                        }
+                                        className="
+                                            flex
+                                            items-center
+                                            gap-4
+                                            rounded-xl
+                                            border border-[#16345c]/25
+                                            bg-[#010b1b]/35
+                                            p-4
+                                        "
+                                    >
+
+                                        {/* ÍCONE */}
+
+                                        <div
+                                            className="
+                                                flex
+                                                h-9 w-9
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-lg
+                                                bg-[#2583ff]/10
+                                                text-[#3692ff]
+                                            "
+                                        >
+                                            {renderCustomFieldIcon(
+                                                definition
+                                            )}
+                                        </div>
+
+
+                                        {/* CONTEÚDO */}
+
+                                        <div className="min-w-0">
+
+                                            <p
+                                                className="
+                                                    text-xs
+                                                    text-[#56657d]
+                                                "
+                                            >
+                                                {
+                                                    definition.name
+                                                }
+                                            </p>
+
+
+                                            <div className="mt-1">
+
+                                                {renderCustomFieldValue(
+                                                    definition,
+                                                    value
+                                                )}
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                )
+                            )}
+
+                        </div>
+
+                    </div>
+
+                </section>
+            )}
+
+
+            {/* =================================================
                 RESUMO
-            ===================================================== */}
+            ================================================= */}
+
             <div
                 className="
                     mt-6
@@ -464,7 +1270,9 @@ export function ClientDetailsPage() {
                     xl:grid-cols-4
                 "
             >
+
                 {/* TOTAL */}
+
                 <div
                     className="
                         rounded-2xl
@@ -473,7 +1281,9 @@ export function ClientDetailsPage() {
                         p-5
                     "
                 >
+
                     <div className="flex items-center justify-between">
+
                         <p
                             className="
                                 text-sm
@@ -483,12 +1293,15 @@ export function ClientDetailsPage() {
                             Total de OS
                         </p>
 
+
                         <ClipboardList
                             size={17}
                             strokeWidth={1.8}
                             className="text-[#56657d]"
                         />
+
                     </div>
+
 
                     <p
                         className="
@@ -503,10 +1316,12 @@ export function ClientDetailsPage() {
                                 .total_work_orders
                         }
                     </p>
+
                 </div>
 
 
                 {/* EM ABERTO */}
+
                 <div
                     className="
                         rounded-2xl
@@ -515,7 +1330,9 @@ export function ClientDetailsPage() {
                         p-5
                     "
                 >
+
                     <div className="flex items-center justify-between">
+
                         <p
                             className="
                                 text-sm
@@ -525,12 +1342,15 @@ export function ClientDetailsPage() {
                             Em aberto
                         </p>
 
+
                         <ClipboardList
                             size={17}
                             strokeWidth={1.8}
                             className="text-[#3692ff]"
                         />
+
                     </div>
+
 
                     <p
                         className="
@@ -545,10 +1365,12 @@ export function ClientDetailsPage() {
                                 .open_work_orders
                         }
                     </p>
+
                 </div>
 
 
                 {/* FINALIZADAS */}
+
                 <div
                     className="
                         rounded-2xl
@@ -557,7 +1379,9 @@ export function ClientDetailsPage() {
                         p-5
                     "
                 >
+
                     <div className="flex items-center justify-between">
+
                         <p
                             className="
                                 text-sm
@@ -567,12 +1391,15 @@ export function ClientDetailsPage() {
                             Finalizadas
                         </p>
 
+
                         <ClipboardCheck
                             size={17}
                             strokeWidth={1.8}
                             className="text-[#3692ff]"
                         />
+
                     </div>
+
 
                     <p
                         className="
@@ -587,10 +1414,12 @@ export function ClientDetailsPage() {
                                 .finished_work_orders
                         }
                     </p>
+
                 </div>
 
 
                 {/* VALOR TOTAL */}
+
                 <div
                     className="
                         rounded-2xl
@@ -599,7 +1428,9 @@ export function ClientDetailsPage() {
                         p-5
                     "
                 >
+
                     <div className="flex items-center justify-between">
+
                         <p
                             className="
                                 text-sm
@@ -609,12 +1440,15 @@ export function ClientDetailsPage() {
                             Valor em serviços
                         </p>
 
+
                         <CircleDollarSign
                             size={17}
                             strokeWidth={1.8}
                             className="text-[#3692ff]"
                         />
+
                     </div>
+
 
                     <p
                         className="
@@ -629,13 +1463,16 @@ export function ClientDetailsPage() {
                                 .total_services_value
                         )}
                     </p>
+
                 </div>
+
             </div>
 
 
-            {/* =====================================================
+            {/* =================================================
                 ORDENS DE SERVIÇO
-            ===================================================== */}
+            ================================================= */}
+
             <section
                 className="
                     mt-6
@@ -646,15 +1483,20 @@ export function ClientDetailsPage() {
                     shadow-[0_16px_45px_rgba(0,0,0,0.14)]
                 "
             >
+
                 {/* HEADER */}
+
                 <div
                     className="
-                        flex items-center gap-3
+                        flex
+                        items-center
+                        gap-3
                         border-b border-[#16345c]/25
                         px-5 py-5
                         sm:px-6
                     "
                 >
+
                     <div
                         className="
                             flex
@@ -674,7 +1516,9 @@ export function ClientDetailsPage() {
                         />
                     </div>
 
+
                     <div>
+
                         <h2
                             className="
                                 text-lg
@@ -685,6 +1529,7 @@ export function ClientDetailsPage() {
                             Ordens de serviço
                         </h2>
 
+
                         <p
                             className="
                                 mt-1
@@ -694,13 +1539,14 @@ export function ClientDetailsPage() {
                         >
                             Histórico de serviços vinculados a este cliente.
                         </p>
+
                     </div>
+
                 </div>
 
 
-                {/* =================================================
-                    LISTA COM ALTURA MÁXIMA
-                ================================================= */}
+                {/* LISTA */}
+
                 <div
                     className="
                         max-h-[520px]
@@ -709,10 +1555,14 @@ export function ClientDetailsPage() {
                         sm:p-6
                     "
                 >
+
                     <div className="space-y-3">
+
                         {selectedClient.work_orders.length ? (
+
                             selectedClient.work_orders.map(
                                 (workOrder) => (
+
                                     <div
                                         key={workOrder.id}
                                         className="
@@ -734,7 +1584,9 @@ export function ClientDetailsPage() {
                                             sm:justify-between
                                         "
                                     >
+
                                         <div className="min-w-0">
+
                                             <p
                                                 className="
                                                     truncate
@@ -746,6 +1598,7 @@ export function ClientDetailsPage() {
                                                 {workOrder.title}
                                             </p>
 
+
                                             <p
                                                 className="
                                                     mt-1
@@ -754,10 +1607,12 @@ export function ClientDetailsPage() {
                                                 "
                                             >
                                                 Criada em{" "}
+
                                                 {formatDate(
                                                     workOrder.created_at
                                                 )}
                                             </p>
+
                                         </div>
 
 
@@ -771,7 +1626,9 @@ export function ClientDetailsPage() {
                                                 sm:text-right
                                             "
                                         >
+
                                             <div>
+
                                                 <p
                                                     className="
                                                         text-xs
@@ -784,6 +1641,7 @@ export function ClientDetailsPage() {
                                                     }
                                                 </p>
 
+
                                                 <p
                                                     className="
                                                         mt-1
@@ -795,7 +1653,9 @@ export function ClientDetailsPage() {
                                                         workOrder.status_payment
                                                     }
                                                 </p>
+
                                             </div>
+
 
                                             <p
                                                 className="
@@ -807,11 +1667,15 @@ export function ClientDetailsPage() {
                                                     workOrder.price
                                                 )}
                                             </p>
+
                                         </div>
+
                                     </div>
                                 )
                             )
+
                         ) : (
+
                             <div
                                 className="
                                     flex
@@ -819,13 +1683,17 @@ export function ClientDetailsPage() {
                                     items-center
                                     justify-center
                                     rounded-xl
-                                    border border-dashed border-[#16345c]/40
+                                    border
+                                    border-dashed
+                                    border-[#16345c]/40
                                     bg-[#010b1b]/25
                                     p-6
                                     text-center
                                 "
                             >
+
                                 <div>
+
                                     <ClipboardList
                                         size={24}
                                         strokeWidth={1.5}
@@ -834,6 +1702,7 @@ export function ClientDetailsPage() {
                                             text-[#56657d]
                                         "
                                     />
+
 
                                     <p
                                         className="
@@ -844,12 +1713,18 @@ export function ClientDetailsPage() {
                                     >
                                         Nenhuma ordem de serviço vinculada a este cliente.
                                     </p>
+
                                 </div>
+
                             </div>
                         )}
+
                     </div>
+
                 </div>
+
             </section>
-        </section >
+
+        </section>
     );
 }

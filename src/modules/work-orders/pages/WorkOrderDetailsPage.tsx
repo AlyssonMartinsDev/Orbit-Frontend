@@ -4,44 +4,73 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
     ArrowLeft,
     CalendarDays,
+    CheckCircle2,
     CircleDollarSign,
     ClipboardList,
     CreditCard,
+    ExternalLink,
     FileText,
+    Hash,
+    Link as LinkIcon,
+    Mail,
+    Phone,
     UserRound,
     Wrench,
 } from "lucide-react";
 
 import { WorkOrderService } from "../services/work-order.service";
+
 import { Loading } from "../../../shared/components/loading";
+import { WhatsAppButton } from "../../../shared/buttons/WhatsAppButton";
 
-import type { WorkOrderDetailsResponse } from "../types/work-order.types";
+import type {
+    WorkOrderDetailsResponse,
+} from "../types/work-order.types";
 
+import type {
+    CustomFieldDefinitionSimpleResponse,
+} from "../../custom-fields/types/custom-field.types";
+
+
+// ============================================================
+// COMPONENTE
+// ============================================================
 
 export function WorkOrderDetailsPage() {
+
     const { id } = useParams();
 
     const navigate = useNavigate();
 
+
+    // ========================================================
+    // ESTADO
+    // ========================================================
+
     const [workOrder, setWorkOrder] =
-        useState<WorkOrderDetailsResponse | null>(null);
+        useState<WorkOrderDetailsResponse | null>(
+            null
+        );
 
     const [isLoading, setIsLoading] =
         useState(true);
 
 
-    // ====================================================
+    // ========================================================
     // CARREGAMENTO
-    // ====================================================
+    // ========================================================
 
     useEffect(() => {
+
         const loadWorkOrder = async () => {
+
             if (!id) {
                 setIsLoading(false);
                 return;
             }
 
             try {
+
                 setIsLoading(true);
 
                 const response =
@@ -61,31 +90,35 @@ export function WorkOrderDetailsPage() {
                 );
 
             } finally {
+
                 setIsLoading(false);
             }
         };
+
 
         void loadWorkOrder();
 
     }, [id]);
 
 
-    // ====================================================
+    // ========================================================
     // LOADING
-    // ====================================================
+    // ========================================================
 
     if (isLoading) {
+
         return (
             <Loading message="Carregando ordem de serviço..." />
         );
     }
 
 
-    // ====================================================
+    // ========================================================
     // NÃO ENCONTRADA
-    // ====================================================
+    // ========================================================
 
     if (!workOrder) {
+
         return (
             <section
                 className="
@@ -102,7 +135,9 @@ export function WorkOrderDetailsPage() {
                     shadow-[0_20px_60px_rgba(0,0,0,0.22)]
                 "
             >
+
                 <div className="text-center">
+
                     <div
                         className="
                             mx-auto
@@ -117,11 +152,14 @@ export function WorkOrderDetailsPage() {
                             text-[#56657d]
                         "
                     >
+
                         <ClipboardList
                             size={22}
                             strokeWidth={1.7}
                         />
+
                     </div>
+
 
                     <h2
                         className="
@@ -134,6 +172,7 @@ export function WorkOrderDetailsPage() {
                         Ordem de serviço não encontrada
                     </h2>
 
+
                     <p
                         className="
                             mt-2
@@ -143,19 +182,22 @@ export function WorkOrderDetailsPage() {
                     >
                         Não foi possível localizar a ordem solicitada.
                     </p>
+
                 </div>
+
             </section>
         );
     }
 
 
-    // ====================================================
+    // ========================================================
     // FORMATADORES
-    // ====================================================
+    // ========================================================
 
     const formatCurrency = (
         value: number
     ) => {
+
         return new Intl.NumberFormat(
             "pt-BR",
             {
@@ -169,6 +211,7 @@ export function WorkOrderDetailsPage() {
     const formatDate = (
         value: string
     ) => {
+
         return new Intl.DateTimeFormat(
             "pt-BR",
             {
@@ -181,16 +224,515 @@ export function WorkOrderDetailsPage() {
     };
 
 
-    // ====================================================
+    /*
+     * Datas de Custom Fields normalmente chegam
+     * no formato YYYY-MM-DD.
+     *
+     * Adicionamos horário local para evitar que
+     * o fuso altere o dia exibido.
+     */
+    const formatCustomDate = (
+        value: string
+    ) => {
+
+        const date =
+            new Date(
+                `${value}T00:00:00`
+            );
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return value;
+        }
+
+        return new Intl.DateTimeFormat(
+            "pt-BR"
+        ).format(date);
+    };
+
+
+    const formatPhone = (
+        value: string
+    ) => {
+
+        const digits =
+            value.replace(/\D/g, "");
+
+        /*
+         * Caso algum valor tenha sido armazenado
+         * já com o código do Brasil.
+         */
+        const phone =
+            digits.length > 11 &&
+                digits.startsWith("55")
+
+                ? digits.slice(2)
+
+                : digits;
+
+
+        if (phone.length === 11) {
+
+            return phone.replace(
+                /(\d{2})(\d{5})(\d{4})/,
+                "($1) $2-$3"
+            );
+        }
+
+
+        if (phone.length === 10) {
+
+            return phone.replace(
+                /(\d{2})(\d{4})(\d{4})/,
+                "($1) $2-$3"
+            );
+        }
+
+
+        return value;
+    };
+
+
+    // ========================================================
     // STATUS
-    // ====================================================
+    // ========================================================
 
     const isServiceFinished =
-        workOrder.status_service === "FINALIZADO";
+        workOrder.status_service ===
+        "FINALIZADO";
+
 
     const isPaymentPaid =
-        workOrder.status_payment === "PAGO";
+        workOrder.status_payment ===
+        "PAGO";
 
+
+    // ========================================================
+    // ÍCONE DO CUSTOM FIELD
+    // ========================================================
+
+    const renderCustomFieldIcon = (
+        definition:
+            CustomFieldDefinitionSimpleResponse
+    ) => {
+
+        // ----------------------------------------------------
+        // PRESETS
+        // ----------------------------------------------------
+
+        if (
+            definition.preset_type ===
+            "WHATSAPP" ||
+            definition.preset_type ===
+            "PHONE"
+        ) {
+
+            return (
+                <Phone
+                    size={17}
+                    strokeWidth={1.8}
+                />
+            );
+        }
+
+
+        if (
+            definition.preset_type ===
+            "EMAIL"
+        ) {
+
+            return (
+                <Mail
+                    size={17}
+                    strokeWidth={1.8}
+                />
+            );
+        }
+
+
+        if (
+            definition.preset_type ===
+            "URL"
+        ) {
+
+            return (
+                <LinkIcon
+                    size={17}
+                    strokeWidth={1.8}
+                />
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // CAMPOS COMUNS
+        // ----------------------------------------------------
+
+        if (
+            definition.field_type ===
+            "NUMBER"
+        ) {
+
+            return (
+                <Hash
+                    size={17}
+                    strokeWidth={1.8}
+                />
+            );
+        }
+
+
+        if (
+            definition.field_type ===
+            "DATE"
+        ) {
+
+            return (
+                <CalendarDays
+                    size={17}
+                    strokeWidth={1.8}
+                />
+            );
+        }
+
+
+        if (
+            definition.field_type ===
+            "BOOLEAN"
+        ) {
+
+            return (
+                <CheckCircle2
+                    size={17}
+                    strokeWidth={1.8}
+                />
+            );
+        }
+
+
+        return (
+            <FileText
+                size={17}
+                strokeWidth={1.8}
+            />
+        );
+    };
+
+
+    // ========================================================
+    // VALOR DO CUSTOM FIELD
+    // ========================================================
+
+    const renderCustomFieldValue = (
+        definition:
+            CustomFieldDefinitionSimpleResponse,
+        value: string | null
+    ) => {
+
+        // ----------------------------------------------------
+        // SEM VALOR
+        // ----------------------------------------------------
+
+        if (
+            value === null ||
+            value.trim() === ""
+        ) {
+
+            return (
+                <span className="text-[#56657d]">
+                    Não informado
+                </span>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // PRESET: WHATSAPP
+        // ----------------------------------------------------
+
+        /*
+         * Esta é a regra importante:
+         *
+         * somente preset_type === "WHATSAPP"
+         * recebe o botão do WhatsApp.
+         *
+         * O nome do campo e o field_type não
+         * interferem nessa decisão.
+         */
+
+        if (
+            definition.preset_type ===
+            "WHATSAPP"
+        ) {
+
+            return (
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-2
+                    "
+                >
+
+                    <span>
+                        {formatPhone(value)}
+                    </span>
+
+
+                    <WhatsAppButton
+                        phone={value}
+                    />
+
+                </div>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // PRESET: PHONE
+        // ----------------------------------------------------
+
+        /*
+         * PHONE é apenas telefone.
+         *
+         * Não recebe botão do WhatsApp.
+         */
+
+        if (
+            definition.preset_type ===
+            "PHONE"
+        ) {
+
+            return (
+                <span>
+                    {formatPhone(value)}
+                </span>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // PRESET: EMAIL
+        // ----------------------------------------------------
+
+        if (
+            definition.preset_type ===
+            "EMAIL"
+        ) {
+
+            return (
+                <a
+                    href={`mailto:${value}`}
+                    className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        text-[#3692ff]
+                        transition-colors
+                        hover:text-[#2583ff]
+                    "
+                >
+
+                    <span
+                        className="
+                            break-all
+                        "
+                    >
+                        {value}
+                    </span>
+
+
+                    <ExternalLink
+                        size={14}
+                        strokeWidth={1.8}
+                        className="
+                            shrink-0
+                        "
+                    />
+
+                </a>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // PRESET: URL
+        // ----------------------------------------------------
+
+        if (
+            definition.preset_type ===
+            "URL"
+        ) {
+
+            const url =
+                /^https?:\/\//i.test(
+                    value
+                )
+
+                    ? value
+
+                    : `https://${value}`;
+
+
+            return (
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="
+                        inline-flex
+                        max-w-full
+                        items-center
+                        gap-2
+                        text-[#3692ff]
+                        transition-colors
+                        hover:text-[#2583ff]
+                    "
+                >
+
+                    <span
+                        className="
+                            break-all
+                        "
+                    >
+                        {value}
+                    </span>
+
+
+                    <ExternalLink
+                        size={14}
+                        strokeWidth={1.8}
+                        className="
+                            shrink-0
+                        "
+                    />
+
+                </a>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // CAMPO COMUM: DATE
+        // ----------------------------------------------------
+
+        if (
+            definition.field_type ===
+            "DATE"
+        ) {
+
+            return (
+                <span>
+                    {formatCustomDate(
+                        value
+                    )}
+                </span>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // CAMPO COMUM: BOOLEAN
+        // ----------------------------------------------------
+
+        if (
+            definition.field_type ===
+            "BOOLEAN"
+        ) {
+
+            const isTrue =
+                value === "true";
+
+
+            return (
+                <span
+                    className={`
+                        inline-flex
+                        rounded-lg
+                        border
+                        px-2.5
+                        py-1
+                        text-xs
+                        font-medium
+
+                        ${isTrue
+
+                            ? `
+                                    border-emerald-500/20
+                                    bg-emerald-500/10
+                                    text-emerald-400
+                                `
+
+                            : `
+                                    border-[#16345c]/35
+                                    bg-[#07182d]
+                                    text-[#a7b4c8]
+                                `
+                        }
+                    `}
+                >
+                    {isTrue
+                        ? "Sim"
+                        : "Não"}
+                </span>
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // TEXT / NUMBER
+        // ----------------------------------------------------
+
+        return (
+            <span
+                className="
+                    whitespace-pre-wrap
+                    break-words
+                "
+            >
+                {value}
+            </span>
+        );
+    };
+
+
+    // ========================================================
+    // CUSTOM VALUES DA ORDEM
+    // ========================================================
+
+    /*
+     * O backend já devolve a definição junto
+     * com cada valor da Ordem de Serviço.
+     *
+     * Ainda assim mantemos a proteção de módulo
+     * para que a tela nunca interprete um campo
+     * de CLIENT como sendo da OS.
+     */
+
+    const workOrderCustomValues =
+        workOrder.custom_values
+            ?.filter(
+                (customField) =>
+                    customField
+                        .field_definition
+                        .module ===
+                    "WORK_ORDER"
+            )
+            .sort(
+                (a, b) =>
+                    a.field_definition
+                        .display_order -
+                    b.field_definition
+                        .display_order
+            ) ?? [];
+
+
+    // ========================================================
+    // RENDER
+    // ========================================================
 
     return (
         <section
@@ -206,12 +748,16 @@ export function WorkOrderDetailsPage() {
                 lg:px-8
             "
         >
-            {/* =====================================================
+
+            {/* =================================================
                 VOLTAR
-            ===================================================== */}
+            ================================================= */}
+
             <button
                 type="button"
-                onClick={() => navigate(-1)}
+                onClick={() =>
+                    navigate(-1)
+                }
                 className="
                     inline-flex
                     items-center
@@ -229,20 +775,31 @@ export function WorkOrderDetailsPage() {
                     hover:text-[#f8fafc]
                 "
             >
+
                 <ArrowLeft
                     size={17}
                     strokeWidth={1.8}
                 />
 
                 Voltar
+
             </button>
 
 
-            {/* =====================================================
+            {/* =================================================
                 HEADER
-            ===================================================== */}
+            ================================================= */}
+
             <header className="mt-6">
-                <div className="flex items-center gap-3">
+
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-3
+                    "
+                >
+
                     <div
                         className="
                             flex
@@ -258,13 +815,17 @@ export function WorkOrderDetailsPage() {
                             shadow-[0_0_20px_rgba(37,131,255,0.08)]
                         "
                     >
+
                         <ClipboardList
                             size={20}
                             strokeWidth={1.8}
                         />
+
                     </div>
 
+
                     <div>
+
                         <p
                             className="
                                 text-xs
@@ -276,6 +837,7 @@ export function WorkOrderDetailsPage() {
                         >
                             Ordem de serviço #{workOrder.id}
                         </p>
+
 
                         <h1
                             className="
@@ -289,8 +851,11 @@ export function WorkOrderDetailsPage() {
                         >
                             {workOrder.title}
                         </h1>
+
                     </div>
+
                 </div>
+
 
                 <p
                     className="
@@ -303,12 +868,14 @@ export function WorkOrderDetailsPage() {
                 >
                     Visualize todas as informações vinculadas a esta ordem de serviço.
                 </p>
+
             </header>
 
 
-            {/* =====================================================
+            {/* =================================================
                 DADOS PRINCIPAIS
-            ===================================================== */}
+            ================================================= */}
+
             <section
                 className="
                     mt-8
@@ -319,6 +886,9 @@ export function WorkOrderDetailsPage() {
                     shadow-[0_16px_45px_rgba(0,0,0,0.14)]
                 "
             >
+
+                {/* HEADER */}
+
                 <div
                     className="
                         flex
@@ -331,6 +901,7 @@ export function WorkOrderDetailsPage() {
                         sm:px-6
                     "
                 >
+
                     <div
                         className="
                             flex
@@ -343,13 +914,17 @@ export function WorkOrderDetailsPage() {
                             text-[#3692ff]
                         "
                     >
+
                         <Wrench
                             size={19}
                             strokeWidth={1.8}
                         />
+
                     </div>
 
+
                     <div>
+
                         <h2
                             className="
                                 text-lg
@@ -360,6 +935,7 @@ export function WorkOrderDetailsPage() {
                             Informações da ordem
                         </h2>
 
+
                         <p
                             className="
                                 mt-1
@@ -369,11 +945,16 @@ export function WorkOrderDetailsPage() {
                         >
                             Dados principais do serviço.
                         </p>
+
                     </div>
+
                 </div>
 
 
+                {/* CONTEÚDO */}
+
                 <div className="p-5 sm:p-6">
+
                     <div
                         className="
                             grid
@@ -381,7 +962,9 @@ export function WorkOrderDetailsPage() {
                             md:grid-cols-2
                         "
                     >
+
                         {/* CLIENTE */}
+
                         <div
                             className="
                                 flex
@@ -393,6 +976,7 @@ export function WorkOrderDetailsPage() {
                                 p-4
                             "
                         >
+
                             <div
                                 className="
                                     flex
@@ -406,16 +990,26 @@ export function WorkOrderDetailsPage() {
                                     text-[#3692ff]
                                 "
                             >
+
                                 <UserRound
                                     size={17}
                                     strokeWidth={1.8}
                                 />
+
                             </div>
 
+
                             <div className="min-w-0">
-                                <p className="text-xs text-[#56657d]">
+
+                                <p
+                                    className="
+                                        text-xs
+                                        text-[#56657d]
+                                    "
+                                >
                                     Cliente
                                 </p>
+
 
                                 <p
                                     className="
@@ -428,11 +1022,14 @@ export function WorkOrderDetailsPage() {
                                 >
                                     {workOrder.client.name}
                                 </p>
+
                             </div>
+
                         </div>
 
 
                         {/* VALOR */}
+
                         <div
                             className="
                                 flex
@@ -444,6 +1041,7 @@ export function WorkOrderDetailsPage() {
                                 p-4
                             "
                         >
+
                             <div
                                 className="
                                     flex
@@ -457,16 +1055,26 @@ export function WorkOrderDetailsPage() {
                                     text-[#3692ff]
                                 "
                             >
+
                                 <CircleDollarSign
                                     size={17}
                                     strokeWidth={1.8}
                                 />
+
                             </div>
 
+
                             <div>
-                                <p className="text-xs text-[#56657d]">
+
+                                <p
+                                    className="
+                                        text-xs
+                                        text-[#56657d]
+                                    "
+                                >
                                     Valor
                                 </p>
+
 
                                 <p
                                     className="
@@ -476,13 +1084,20 @@ export function WorkOrderDetailsPage() {
                                         text-[#f8fafc]
                                     "
                                 >
-                                    {formatCurrency(Number(workOrder.price))}
+                                    {formatCurrency(
+                                        Number(
+                                            workOrder.price
+                                        )
+                                    )}
                                 </p>
+
                             </div>
+
                         </div>
 
 
                         {/* STATUS SERVIÇO */}
+
                         <div
                             className="
                                 rounded-xl
@@ -491,6 +1106,7 @@ export function WorkOrderDetailsPage() {
                                 p-4
                             "
                         >
+
                             <div
                                 className="
                                     flex
@@ -498,15 +1114,24 @@ export function WorkOrderDetailsPage() {
                                     gap-2
                                 "
                             >
+
                                 <Wrench
                                     size={15}
                                     className="text-[#56657d]"
                                 />
 
-                                <p className="text-xs text-[#56657d]">
+
+                                <p
+                                    className="
+                                        text-xs
+                                        text-[#56657d]
+                                    "
+                                >
                                     Status do serviço
                                 </p>
+
                             </div>
+
 
                             <span
                                 className={`
@@ -520,11 +1145,13 @@ export function WorkOrderDetailsPage() {
                                     font-medium
 
                                     ${isServiceFinished
+
                                         ? `
                                                 border-[#2583ff]/20
                                                 bg-[#2583ff]/10
                                                 text-[#3692ff]
                                             `
+
                                         : `
                                                 border-[#16345c]/35
                                                 bg-[#07182d]
@@ -535,10 +1162,12 @@ export function WorkOrderDetailsPage() {
                             >
                                 {workOrder.status_service}
                             </span>
+
                         </div>
 
 
                         {/* STATUS PAGAMENTO */}
+
                         <div
                             className="
                                 rounded-xl
@@ -547,6 +1176,7 @@ export function WorkOrderDetailsPage() {
                                 p-4
                             "
                         >
+
                             <div
                                 className="
                                     flex
@@ -554,15 +1184,24 @@ export function WorkOrderDetailsPage() {
                                     gap-2
                                 "
                             >
+
                                 <CreditCard
                                     size={15}
                                     className="text-[#56657d]"
                                 />
 
-                                <p className="text-xs text-[#56657d]">
+
+                                <p
+                                    className="
+                                        text-xs
+                                        text-[#56657d]
+                                    "
+                                >
                                     Status do pagamento
                                 </p>
+
                             </div>
+
 
                             <span
                                 className={`
@@ -576,11 +1215,13 @@ export function WorkOrderDetailsPage() {
                                     font-medium
 
                                     ${isPaymentPaid
+
                                         ? `
                                                 border-emerald-500/20
                                                 bg-emerald-500/10
                                                 text-emerald-400
                                             `
+
                                         : `
                                                 border-amber-500/20
                                                 bg-amber-500/[0.07]
@@ -591,15 +1232,20 @@ export function WorkOrderDetailsPage() {
                             >
                                 {workOrder.status_payment}
                             </span>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </section>
 
 
-            {/* =====================================================
+            {/* =================================================
                 DESCRIÇÃO
-            ===================================================== */}
+            ================================================= */}
+
             <section
                 className="
                     mt-6
@@ -610,6 +1256,7 @@ export function WorkOrderDetailsPage() {
                     sm:p-6
                 "
             >
+
                 <div
                     className="
                         flex
@@ -617,6 +1264,7 @@ export function WorkOrderDetailsPage() {
                         gap-3
                     "
                 >
+
                     <div
                         className="
                             flex
@@ -629,13 +1277,17 @@ export function WorkOrderDetailsPage() {
                             text-[#3692ff]
                         "
                     >
+
                         <FileText
                             size={17}
                             strokeWidth={1.8}
                         />
+
                     </div>
 
+
                     <div>
+
                         <h2
                             className="
                                 text-lg
@@ -646,6 +1298,7 @@ export function WorkOrderDetailsPage() {
                             Descrição
                         </h2>
 
+
                         <p
                             className="
                                 mt-1
@@ -655,8 +1308,11 @@ export function WorkOrderDetailsPage() {
                         >
                             Detalhes informados sobre o serviço.
                         </p>
+
                     </div>
+
                 </div>
+
 
                 <div
                     className="
@@ -667,6 +1323,7 @@ export function WorkOrderDetailsPage() {
                         p-4
                     "
                 >
+
                     <p
                         className="
                             whitespace-pre-wrap
@@ -678,13 +1335,16 @@ export function WorkOrderDetailsPage() {
                         {workOrder.description ||
                             "Nenhuma descrição informada."}
                     </p>
+
                 </div>
+
             </section>
 
 
-            {/* =====================================================
+            {/* =================================================
                 DADOS COMPLEMENTARES
-            ===================================================== */}
+            ================================================= */}
+
             <section
                 className="
                     mt-6
@@ -695,6 +1355,9 @@ export function WorkOrderDetailsPage() {
                     sm:p-6
                 "
             >
+
+                {/* HEADER */}
+
                 <div
                     className="
                         flex
@@ -702,6 +1365,7 @@ export function WorkOrderDetailsPage() {
                         gap-3
                     "
                 >
+
                     <div
                         className="
                             flex
@@ -714,13 +1378,17 @@ export function WorkOrderDetailsPage() {
                             text-[#3692ff]
                         "
                     >
+
                         <ClipboardList
                             size={17}
                             strokeWidth={1.8}
                         />
+
                     </div>
 
+
                     <div>
+
                         <h2
                             className="
                                 text-lg
@@ -731,6 +1399,7 @@ export function WorkOrderDetailsPage() {
                             Dados complementares
                         </h2>
 
+
                         <p
                             className="
                                 mt-1
@@ -740,9 +1409,13 @@ export function WorkOrderDetailsPage() {
                         >
                             Informações adicionais vinculadas à ordem de serviço.
                         </p>
+
                     </div>
+
                 </div>
 
+
+                {/* CUSTOM FIELDS */}
 
                 <div
                     className="
@@ -752,11 +1425,17 @@ export function WorkOrderDetailsPage() {
                         md:grid-cols-2
                     "
                 >
-                    {workOrder.custom_values?.length ? (
-                        workOrder.custom_values.map(
+
+                    {workOrderCustomValues.length >
+                        0 ? (
+
+                        workOrderCustomValues.map(
                             (customField) => (
+
                                 <div
-                                    key={customField.id}
+                                    key={
+                                        customField.id
+                                    }
                                     className="
                                         rounded-xl
                                         border border-[#16345c]/25
@@ -764,37 +1443,72 @@ export function WorkOrderDetailsPage() {
                                         p-4
                                     "
                                 >
-                                    <p
+
+                                    {/* CABEÇALHO DO CAMPO */}
+
+                                    <div
                                         className="
-                                            text-xs
-                                            font-medium
-                                            uppercase
-                                            tracking-[0.12em]
-                                            text-[#56657d]
+                                            flex
+                                            items-center
+                                            gap-2
                                         "
                                     >
-                                        {
-                                            customField
-                                                .field_definition
-                                                .name
-                                        }
-                                    </p>
 
-                                    <p
+                                        <span
+                                            className="
+                                                text-[#56657d]
+                                            "
+                                        >
+                                            {renderCustomFieldIcon(
+                                                customField
+                                                    .field_definition
+                                            )}
+                                        </span>
+
+
+                                        <p
+                                            className="
+                                                text-xs
+                                                font-medium
+                                                uppercase
+                                                tracking-[0.12em]
+                                                text-[#56657d]
+                                            "
+                                        >
+                                            {
+                                                customField
+                                                    .field_definition
+                                                    .name
+                                            }
+                                        </p>
+
+                                    </div>
+
+
+                                    {/* VALOR */}
+
+                                    <div
                                         className="
-                                            mt-2
+                                            mt-3
                                             text-sm
                                             font-medium
                                             text-[#f8fafc]
                                         "
                                     >
-                                        {customField.value ||
-                                            "Não informado"}
-                                    </p>
+                                        {renderCustomFieldValue(
+                                            customField
+                                                .field_definition,
+
+                                            customField.value
+                                        )}
+                                    </div>
+
                                 </div>
                             )
                         )
+
                     ) : (
+
                         <div
                             className="
                                 flex
@@ -811,7 +1525,9 @@ export function WorkOrderDetailsPage() {
                                 md:col-span-2
                             "
                         >
+
                             <div>
+
                                 <ClipboardList
                                     size={23}
                                     strokeWidth={1.5}
@@ -820,6 +1536,7 @@ export function WorkOrderDetailsPage() {
                                         text-[#56657d]
                                     "
                                 />
+
 
                                 <p
                                     className="
@@ -830,16 +1547,21 @@ export function WorkOrderDetailsPage() {
                                 >
                                     Nenhum dado complementar cadastrado.
                                 </p>
+
                             </div>
+
                         </div>
                     )}
+
                 </div>
+
             </section>
 
 
-            {/* =====================================================
+            {/* =================================================
                 DATA DE CRIAÇÃO
-            ===================================================== */}
+            ================================================= */}
+
             <div
                 className="
                     mt-6
@@ -853,10 +1575,12 @@ export function WorkOrderDetailsPage() {
                     text-[#56657d]
                 "
             >
+
                 <CalendarDays
                     size={15}
                     strokeWidth={1.8}
                 />
+
 
                 <span>
                     Ordem criada em{" "}
@@ -864,7 +1588,9 @@ export function WorkOrderDetailsPage() {
                         workOrder.created_at
                     )}
                 </span>
+
             </div>
+
         </section>
     );
 }
