@@ -34,11 +34,13 @@ const mockUsers = [
 
 export function UsersSettings() {
     return (
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
+            <p role="status" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">Em desenvolvimento. Os usuários e indicadores abaixo são exemplos fictícios; o gerenciamento ainda não está disponível.</p>
+            <fieldset disabled className="min-w-0 space-y-6 opacity-70">
             {/* =========================================================
           HEADER
       ========================================================= */}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                 <div className="flex items-center gap-3">
                     <div
                         className="
@@ -365,6 +367,7 @@ export function UsersSettings() {
                     </table>
                 </div>
             </div>
+        </fieldset>
         </section>
     );
 }

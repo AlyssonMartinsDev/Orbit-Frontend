@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
+import { useEffect, useRef, useState } from "react";
 import {
     Plus,
     Settings2,
@@ -34,6 +35,7 @@ const presetLabels: Record<CustomFieldPresetType, string> = {
 
 
 export function CustomFieldsPage() {
+    const error = useCustomFieldStore((state) => state.error);
 
     const selectedCustomField = useCustomFieldStore(
         (state) => state.selectedCustomField
@@ -63,6 +65,7 @@ export function CustomFieldsPage() {
     );
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const submitting = useRef(false);
 
 
     useEffect(() => {
@@ -88,10 +91,13 @@ export function CustomFieldsPage() {
 
     // Fecha o modal e limpa o campo selecionado.
     const handleCloseModal = () => {
+        if (submitting.current) return;
         setIsModalOpen(false);
         clearSelectedCustomField();
     };
 
+
+    if (error) return <RequestError message={error} onRetry={() => void loadCustomFields(true)} />;
 
     if (isLoading) {
         return (
@@ -308,7 +314,8 @@ export function CustomFieldsPage() {
                         selectedCustomField ?? undefined
                     }
                     onCancel={handleCloseModal}
-                    onSuccess={handleCloseModal}
+                    onSubmittingChange={(value) => { submitting.current = value; }}
+                    onSuccess={() => { submitting.current = false; handleCloseModal(); }}
                 />
 
             </Modal>

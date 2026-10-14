@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
+import { GlobalMessage } from "../feedback/GlobalMessage";
 import { X } from "lucide-react";
-
 import type { ModalProps } from "./modal.types";
-
 
 export function Modal({
     open,
@@ -11,143 +11,107 @@ export function Modal({
     children,
     onClose,
 }: ModalProps) {
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    const titleId = useId();
+    const descriptionId = useId();
 
     useEffect(() => {
-        if (!open) {
-            return;
-        }
-
-        const handleKeyDown = (
-            event: KeyboardEvent
-        ) => {
-            if (event.key === "Escape") {
-                onClose();
-            }
-        };
-
-
-        // Impede a página atrás do modal de rolar.
-        const previousOverflow =
-            document.body.style.overflow;
-
+        const dialog = dialogRef.current;
+        if (!open || !dialog) return;
+        const previousFocus = document.activeElement;
+        const previousOverflow = document.body.style.overflow;
+        dialog.showModal();
         document.body.style.overflow = "hidden";
-
-        document.addEventListener(
-            "keydown",
-            handleKeyDown
-        );
-
-
         return () => {
-            document.removeEventListener(
-                "keydown",
-                handleKeyDown
-            );
-
-            document.body.style.overflow =
-                previousOverflow;
+            dialog.close();
+            document.body.style.overflow = previousOverflow;
+            if (
+                previousFocus instanceof HTMLElement &&
+                previousFocus.isConnected
+            )
+                previousFocus.focus();
         };
-    }, [open, onClose]);
+    }, [open]);
 
+    if (!open) return null;
 
-    if (!open) {
-        return null;
-    }
-
-
-    const handleOverlayClick = (
-        event: React.MouseEvent<HTMLDivElement>
-    ) => {
-        if (
-            event.target ===
-            event.currentTarget
-        ) {
-            onClose();
-        }
-    };
-
-
-    return (
-        <div
-            onClick={handleOverlayClick}
-            className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+    return createPortal(
+        <dialog
+            ref={dialogRef}
+            aria-labelledby={titleId}
+            aria-describedby={subtitle ? descriptionId : undefined}
+            onKeyDown={(event) => {
+                if (event.key !== "Tab") return;
+                const focusable = [
+                    ...event.currentTarget.querySelectorAll<HTMLElement>(
+                        "a[href], button, input, select, textarea, [tabindex]",
+                    ),
+                ].filter(
+                    (element) =>
+                        element.tabIndex >= 0 &&
+                        !element.matches(":disabled") &&
+                        element.getClientRects().length > 0,
+                );
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last?.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first?.focus();
+                }
+            }}
+            onCancel={(event) => {
+                event.preventDefault();
+                onClose();
+            }}
+            onClick={(event) => {
+                if (event.target !== event.currentTarget) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                if (
+                    event.clientX < rect.left ||
+                    event.clientX > rect.right ||
+                    event.clientY < rect.top ||
+                    event.clientY > rect.bottom
+                )
+                    onClose();
+            }}
+            className="m-auto max-h-[calc(100dvh-1.5rem)] w-[calc(100%-1.5rem)] max-w-lg overflow-hidden rounded-2xl border border-[#16345c] bg-[#051020] p-0 text-[#f8fafc] shadow-2xl backdrop:bg-black/75 backdrop:backdrop-blur-sm sm:max-h-[calc(100dvh-3rem)]"
         >
-
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="modal-title"
-                className="
-                    flex
-                    max-h-[calc(100vh-2rem)]
-                    w-full
-                    max-w-lg
-                    flex-col
-                    overflow-hidden
-                    rounded-3xl
-                    border
-                    border-[#16345C]/60
-                    bg-[#051020]
-                    shadow-2xl
-                "
-            >
-
-                {/* HEADER */}
-                <header className="flex shrink-0 items-start justify-between border-b border-[#16345C]/60 p-6">
-
-                    <div className="min-w-0 pr-4">
-
+            <GlobalMessage />
+            <div className="flex max-h-[calc(100dvh-1.5rem)] flex-col sm:max-h-[calc(100dvh-3rem)]">
+                <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#16345c] p-4 sm:p-6">
+                    <div className="min-w-0 break-words">
                         <h2
-                            id="modal-title"
-                            className="text-xl font-semibold text-[#F8FAFC]"
+                            id={titleId}
+                            className="text-lg font-semibold sm:text-xl"
                         >
                             {title}
                         </h2>
-
-
                         {subtitle && (
-                            <p className="mt-1 text-sm text-[#8290A8]">
+                            <p
+                                id={descriptionId}
+                                className="mt-1 text-sm text-[#a7b4c8]"
+                            >
                                 {subtitle}
                             </p>
                         )}
-
                     </div>
-
-
                     <button
                         type="button"
                         onClick={onClose}
                         aria-label="Fechar modal"
-                        className="
-                            shrink-0
-                            rounded-xl
-                            p-2
-                            text-[#8290A8]
-                            transition
-                            hover:bg-[#0A2242]
-                            hover:text-[#F8FAFC]
-                        "
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#a7b4c8] hover:bg-[#0a2242]"
                     >
                         <X size={20} />
                     </button>
-
                 </header>
-
-
-                {/* CONTEÚDO COM SCROLL */}
-                <div
-                    className="
-                        min-h-0
-                        flex-1
-                        overflow-y-auto
-                        p-6
-                    "
-                >
+                <div className="min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6">
                     {children}
                 </div>
-
             </div>
-
-        </div>
+        </dialog>,
+        document.body,
     );
 }

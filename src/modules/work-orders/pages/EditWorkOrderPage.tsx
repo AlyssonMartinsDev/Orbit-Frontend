@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useWorkOrder } from "../hooks/useWorkOrder";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { useParams } from "react-router-dom";
 
 import {
@@ -8,54 +9,14 @@ import {
 } from "lucide-react";
 
 import { WorkOrderForm } from "../components/WorkOrderForm";
-import { WorkOrderService } from "../services/work-order.service";
 
 
 export function EditWorkOrderPage() {
     const { id } = useParams();
 
-    const [workOrder, setWorkOrder] =
-        useState<any | null>(null);
+    const { data: workOrder, isLoading, error, refresh } = useWorkOrder(id);
 
-    const [isLoading, setIsLoading] =
-        useState(true);
-
-
-    // ====================================================
-    // CARREGAMENTO DA ORDEM
-    // ====================================================
-
-    useEffect(() => {
-        const loadWorkOrder = async () => {
-            if (!id) {
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                const response =
-                    await WorkOrderService.getById(
-                        Number(id)
-                    );
-
-                if (
-                    !response.success ||
-                    !response.data
-                ) {
-                    return;
-                }
-
-                setWorkOrder(
-                    response.data
-                );
-
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        void loadWorkOrder();
-    }, [id]);
+    if (error) return <RequestError message={error} onRetry={refresh} />;
 
 
     // ====================================================
@@ -305,7 +266,8 @@ export function EditWorkOrderPage() {
             ===================================================== */}
             <div className="mt-8">
                 <WorkOrderForm
-                    mode="edit"
+                    key={workOrder.id}
+                mode="edit"
                     workOrder={workOrder}
                 />
             </div>

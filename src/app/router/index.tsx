@@ -1,214 +1,195 @@
-import { createBrowserRouter } from "react-router-dom";
-import { LoginPage } from "../../modules/auth/pages/LoginPage";
-import { DashboardPage } from "../../modules/dashboard/pages/DashboardPage";
-import { ProtectedRoute } from "./guards/ProtectedRoute";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { GuestRoute } from "../../modules/auth/components/GuestRoute";
-import { AppLayout } from "../../shared/layouts/AppLayout";
-
-// Rotas
-import { NotFoundPage } from "../../shared/pages/NotFoundPage";
-import HomePage from "../../pages/HomePage";
-import { ClientsOptionsPage } from "../../modules/clients/pages/ClientsOptionsPage";
-import { WorkOrdersOptionsPage } from "../../modules/work-orders/pages/WorkOrdersOptionsPage";
-
-// Clients Routes
-import { CreateClientPage } from "../../modules/clients/pages/CreateClientPage";
-import { ClientListPage } from "../../modules/clients/pages/ClientListPage";
-import { ClientDetailsPage } from "../../modules/clients/pages/ClientsDetailPage";
-import { EditClientPage } from "../../modules/clients/pages/EditClientPage";
-
-// Work Orders Routes
-import { CreateWorkOrderPage } from "../../modules/work-orders/pages/CreateWorkOrderPage";
-import { EditWorkOrderPage } from "../../modules/work-orders/pages/EditWorkOrderPage";
-import { WorkOrderDetailsPage } from "../../modules/work-orders/pages/WorkOrderDetailsPage";
-import { CustomFieldsPage } from "../../modules/custom-fields/pages/CustomFieldsPage";
-import { WorkOrderTrackingPage } from "../../modules/work-orders/pages/WorkOrderTrackingPage";
-
-// Settings Routes
-// Settings Routes
-import { SettingsPage } from "../../modules/settings/pages/SettingsPage";
-import { OrganizationSettings } from "../../modules/settings/components/OrganizationSettings";
-import { UsersSettings } from "../../modules/settings/components/UsersSettings";
-import { WorkOrderSettings } from "../../modules/settings/components/WorkOrderSettings";
-import { AccountSettings } from "../../modules/settings/components/AccountSettings";
+import { RouteErrorPage } from "../../shared/pages/RouteErrorPage";
+import { Root, InitialLoading, ProtectedLayout } from "./RouteLayouts";
 
 export const router = createBrowserRouter([
     {
-        path: "/",
-        element: <HomePage />,
-    },
-    {
-        path: "/login",
-        element: (
-            <GuestRoute>
-                <LoginPage />
-            </GuestRoute>
-        ),
-    },
-
-    {
-        path: "/dashboard",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <DashboardPage />
-                </AppLayout>
-            </ProtectedRoute>
-        )
-    },
-    {
-        path: "/clients",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <ClientsOptionsPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/work-orders",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <WorkOrdersOptionsPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/clients/create",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <CreateClientPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/clients/:id/details",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <ClientDetailsPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/clients/:id/edit",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <EditClientPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-    },
-    {
-        path: "/clients/list",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <ClientListPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-
-    },
-    {
-        path: "/work-orders/create",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <CreateWorkOrderPage />
-                </AppLayout>
-            </ProtectedRoute>
-        )
-    },
-    {
-        path: "/work-orders/:id/edit",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <EditWorkOrderPage />
-                </AppLayout>
-            </ProtectedRoute>
-        )
-    },
-    {
-        path: "/work-orders/:id/details",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <WorkOrderDetailsPage />
-                </AppLayout>
-            </ProtectedRoute>
-        )
-    },
-    {
-        path: "/settings/custom-fields",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <CustomFieldsPage />
-                </AppLayout>
-            </ProtectedRoute>
-        )
-    },
-    {
-        path: "/settings",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <SettingsPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
+        Component: Root,
+        ErrorBoundary: RouteErrorPage,
+        HydrateFallback: InitialLoading,
         children: [
             {
-                path: "organization",
-                element: <OrganizationSettings />,
+                path: "/",
+                lazy: async () => ({
+                    Component: (await import("../../pages/HomePage")).default,
+                }),
             },
             {
-                path: "users",
-                element: <UsersSettings />,
+                element: (
+                    <GuestRoute>
+                        <Outlet />
+                    </GuestRoute>
+                ),
+                children: [
+                    {
+                        path: "/login",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/auth/pages/LoginPage")
+                            ).LoginPage,
+                        }),
+                    },
+                ],
             },
             {
-                path: "work-orders",
-                element: <WorkOrderSettings />,
+                Component: ProtectedLayout,
+                children: [
+                    {
+                        path: "/dashboard",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/dashboard/pages/DashboardPage")
+                            ).DashboardPage,
+                        }),
+                    },
+                    {
+                        path: "/clients",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/clients/pages/ClientsOptionsPage")
+                            ).ClientsOptionsPage,
+                        }),
+                    },
+                    {
+                        path: "/clients/create",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/clients/pages/CreateClientPage")
+                            ).CreateClientPage,
+                        }),
+                    },
+                    {
+                        path: "/clients/list",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/clients/pages/ClientListPage")
+                            ).ClientListPage,
+                        }),
+                    },
+                    {
+                        path: "/clients/:id/details",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/clients/pages/ClientsDetailPage")
+                            ).ClientDetailsPage,
+                        }),
+                    },
+                    {
+                        path: "/clients/:id/edit",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/clients/pages/EditClientPage")
+                            ).EditClientPage,
+                        }),
+                    },
+                    {
+                        path: "/work-orders",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/work-orders/pages/WorkOrdersOptionsPage")
+                            ).WorkOrdersOptionsPage,
+                        }),
+                    },
+                    {
+                        path: "/work-orders/create",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/work-orders/pages/CreateWorkOrderPage")
+                            ).CreateWorkOrderPage,
+                        }),
+                    },
+                    {
+                        path: "/work-orders/tracking",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/work-orders/pages/WorkOrderTrackingPage")
+                            ).WorkOrderTrackingPage,
+                        }),
+                    },
+                    {
+                        path: "/work-orders/:id/edit",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/work-orders/pages/EditWorkOrderPage")
+                            ).EditWorkOrderPage,
+                        }),
+                    },
+                    {
+                        path: "/work-orders/:id/details",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/work-orders/pages/WorkOrderDetailsPage")
+                            ).WorkOrderDetailsPage,
+                        }),
+                    },
+                    {
+                        path: "/users",
+                        element: <Navigate to="/settings/users" replace />,
+                    },
+                    {
+                        path: "/settings",
+                        lazy: async () => ({
+                            Component: (
+                                await import("../../modules/settings/pages/SettingsPage")
+                            ).SettingsPage,
+                        }),
+                        children: [
+                            {
+                                index: true,
+                                element: <Navigate to="organization" replace />,
+                            },
+                            {
+                                path: "organization",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/settings/components/OrganizationSettings")
+                                    ).OrganizationSettings,
+                                }),
+                            },
+                            {
+                                path: "users",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/settings/components/UsersSettings")
+                                    ).UsersSettings,
+                                }),
+                            },
+                            {
+                                path: "work-orders",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/settings/components/WorkOrderSettings")
+                                    ).WorkOrderSettings,
+                                }),
+                            },
+                            {
+                                path: "custom-fields",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/custom-fields/pages/CustomFieldsPage")
+                                    ).CustomFieldsPage,
+                                }),
+                            },
+                            {
+                                path: "account",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/settings/components/AccountSettings")
+                                    ).AccountSettings,
+                                }),
+                            },
+                        ],
+                    },
+                ],
             },
             {
-                path: "account",
-                element: <AccountSettings />,
+                path: "*",
+                lazy: async () => ({
+                    Component: (await import("../../shared/pages/NotFoundPage"))
+                        .NotFoundPage,
+                }),
             },
         ],
     },
-
-    {
-        path: "/work-orders/tracking",
-        element: (
-            <ProtectedRoute>
-                <AppLayout>
-                    <WorkOrderTrackingPage />
-                </AppLayout>
-            </ProtectedRoute>
-        ),
-    },
-
-
-
-
-
-
-
-
-
-    {
-        path: "*",
-        element: <NotFoundPage />,
-    }
 ]);
-
-

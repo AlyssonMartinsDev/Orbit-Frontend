@@ -1,46 +1,29 @@
-/**
- * Remove qualquer caractere que não seja número
- * e limita o telefone brasileiro a 11 dígitos.
- *
- * Exemplo:
- * "(43) 99999-8888" -> "43999998888"
- */
+/** Telefones nacionais brasileiros; aceita colagem com +55. */
 export function sanitizePhone(value: string): string {
-    return value
-        .replace(/\D/g, "")
-        .slice(0, 11);
+    let digits = value.replace(/\D/g, "");
+    if (
+        (digits.length === 12 || digits.length === 13) &&
+        digits.startsWith("55")
+    )
+        digits = digits.slice(2);
+    return digits.slice(0, 11);
 }
 
-
-/**
- * Formata um telefone brasileiro para exibição.
- *
- * 10 dígitos:
- * 4399998888 -> (43) 9999-8888
- *
- * 11 dígitos:
- * 43999998888 -> (43) 99999-8888
- */
-export function formatPhone(value: string): string {
+export function formatPhone(value: string | null | undefined): string {
+    if (!value) return "";
     const numbers = sanitizePhone(value);
-
-    if (numbers.length <= 2) {
-        return numbers;
-    }
-
-    if (numbers.length <= 6) {
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 6)
         return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    }
+    const prefixLength = numbers.length <= 10 ? 6 : 7;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, prefixLength)}-${numbers.slice(prefixLength)}`;
+}
 
-    if (numbers.length <= 10) {
-        return `(${numbers.slice(0, 2)}) ${numbers.slice(
-            2,
-            6
-        )}-${numbers.slice(6)}`;
-    }
-
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(
-        2,
-        7
-    )}-${numbers.slice(7)}`;
+export function getWhatsAppUrl(
+    value: string | null | undefined,
+): string | null {
+    const digits = value?.replace(/\D/g, "") ?? "";
+    if (/^\d{10,11}$/.test(digits)) return `https://wa.me/55${digits}`;
+    if (/^55\d{10,11}$/.test(digits)) return `https://wa.me/${digits}`;
+    return null;
 }

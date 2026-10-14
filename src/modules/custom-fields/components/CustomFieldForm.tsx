@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { getSession, isCurrentSession } from "../../../shared/services/session";
+import axios from "axios";
+import { useId, useRef, useState } from "react";
 
 import { CustomFieldService } from "../services/custom-field.service";
 
@@ -22,6 +24,7 @@ interface CustomFieldFormProps {
     onSuccess?: () => void;
 
     onCancel?: () => void;
+    onSubmittingChange?: (pending: boolean) => void;
 }
 
 
@@ -30,6 +33,7 @@ export function CustomFieldForm({
     customField,
     onSuccess,
     onCancel,
+    onSubmittingChange,
 }: CustomFieldFormProps) {
 
     const updateCustomField = useCustomFieldStore(
@@ -45,6 +49,9 @@ export function CustomFieldForm({
     );
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const pending = useRef(false);
+    const formId = useId();
+    const [sessionId] = useState(() => getSession().id);
 
 
     const [formData, setFormData] =
@@ -127,6 +134,10 @@ export function CustomFieldForm({
         event: React.SubmitEvent<HTMLFormElement>
     ) => {
         event.preventDefault();
+        if (pending.current || !isCurrentSession(sessionId)) return;
+        if (!formData.name.trim()) { showMessage("Informe o nome do campo.", "error"); return; }
+        pending.current = true;
+        onSubmittingChange?.(true);
 
         try {
             setIsSubmitting(true);
@@ -135,11 +146,13 @@ export function CustomFieldForm({
                 mode === "edit" && customField
                     ? await CustomFieldService.update(
                         customField.id,
-                        formData
+                        { ...formData, name: formData.name.trim() }
                     )
                     : await CustomFieldService.create(
-                        formData
+                        { ...formData, name: formData.name.trim() }
                     );
+
+            if (!isCurrentSession(sessionId)) return;
 
             if (!response.success || !response.data) {
                 showMessage(
@@ -175,6 +188,7 @@ export function CustomFieldForm({
             onSuccess?.();
 
         } catch (error) {
+            if (!isCurrentSession(sessionId) || axios.isCancel(error)) return;
             console.error(
                 mode === "edit"
                     ? "Erro ao atualizar campo personalizado:"
@@ -190,6 +204,8 @@ export function CustomFieldForm({
             );
 
         } finally {
+            pending.current = false;
+            onSubmittingChange?.(false);
             setIsSubmitting(false);
         }
     };
@@ -204,17 +220,16 @@ export function CustomFieldForm({
             className="space-y-6"
         >
 
+            <fieldset disabled={isSubmitting} className="min-w-0 space-y-6">
             {/* MÓDULO */}
             <div>
-                <label
-                    htmlFor="custom_field_module"
+                <label htmlFor={`${formId}-module`}
                     className="mb-2 block text-sm font-medium text-[#A7B4C8]"
                 >
                     Usar este campo em
                 </label>
 
-                <select
-                    id="custom_field_module"
+                <select id={`${formId}-module`}
                     value={formData.module}
                     onChange={(event) =>
                         handleModuleChange(
@@ -240,15 +255,13 @@ export function CustomFieldForm({
 
             {/* COMPORTAMENTO */}
             <div>
-                <label
-                    htmlFor="custom_field_preset"
+                <label htmlFor={`${formId}-preset`}
                     className="mb-2 block text-sm font-medium text-[#A7B4C8]"
                 >
                     Comportamento do campo
                 </label>
 
-                <select
-                    id="custom_field_preset"
+                <select id={`${formId}-preset`}
                     value={formData.preset_type ?? ""}
                     onChange={(event) =>
                         handlePresetChange(
@@ -289,15 +302,13 @@ export function CustomFieldForm({
 
             {/* NOME */}
             <div>
-                <label
-                    htmlFor="custom_field_name"
+                <label htmlFor={`${formId}-name`}
                     className="mb-2 block text-sm font-medium text-[#A7B4C8]"
                 >
                     Nome do campo
                 </label>
 
-                <input
-                    id="custom_field_name"
+                <input id={`${formId}-name`}
                     type="text"
                     required
                     placeholder={
@@ -325,15 +336,13 @@ export function CustomFieldForm({
 
             {/* TIPO */}
             <div>
-                <label
-                    htmlFor="custom_field_type"
+                <label htmlFor={`${formId}-type`}
                     className="mb-2 block text-sm font-medium text-[#A7B4C8]"
                 >
                     Tipo do campo
                 </label>
 
-                <select
-                    id="custom_field_type"
+                <select id={`${formId}-type`}
                     value={formData.field_type}
                     disabled={hasPreset}
                     onChange={(event) =>
@@ -372,15 +381,13 @@ export function CustomFieldForm({
 
             {/* PLACEHOLDER */}
             <div>
-                <label
-                    htmlFor="custom_field_placeholder"
+                <label htmlFor={`${formId}-placeholder`}
                     className="mb-2 block text-sm font-medium text-[#A7B4C8]"
                 >
                     Placeholder
                 </label>
 
-                <input
-                    id="custom_field_placeholder"
+                <input id={`${formId}-placeholder`}
                     type="text"
                     placeholder={
                         formData.preset_type === "WHATSAPP"
@@ -411,15 +418,13 @@ export function CustomFieldForm({
 
             {/* ORDEM */}
             <div>
-                <label
-                    htmlFor="custom_field_order"
+                <label htmlFor={`${formId}-order`}
                     className="mb-2 block text-sm font-medium text-[#A7B4C8]"
                 >
                     Ordem de exibição
                 </label>
 
-                <input
-                    id="custom_field_order"
+                <input id={`${formId}-order`}
                     type="number"
                     min={0}
                     value={formData.display_order ?? 0}
@@ -527,6 +532,7 @@ export function CustomFieldForm({
 
             </div>
 
+            </fieldset>
         </form>
     );
 }

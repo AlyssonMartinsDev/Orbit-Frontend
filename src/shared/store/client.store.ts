@@ -1,101 +1,92 @@
+import axios from "axios";
 import { create } from "zustand";
-
+import { getSession, isCurrentSession } from "../services/session";
 import { ClientService } from "../../modules/clients/services/client.service";
-import type { ClientResponse, ClientDetailsResponse } from "../../modules/clients/types/client.types";
+import { requireResponseData } from "../types/api.types";
+import type {
+    ClientResponse,
+    ClientDetailsResponse,
+} from "../../modules/clients/types/client.types";
 
 interface ClientState {
     clients: ClientResponse[];
-
     selectedClient: ClientDetailsResponse | null;
-
     isLoading: boolean;
     isLoaded: boolean;
-
+    error: string | null;
     loadClients: (forceRefresh?: boolean) => Promise<void>;
-
     addClient: (client: ClientResponse) => void;
-
     updateClient: (client: ClientResponse) => void;
-
-    removeClient: (clientId: number) => void;
-
+    removeClient: (id: number) => void;
     setSelectedClient: (client: ClientDetailsResponse) => void;
-
     clearSelectedClient: () => void;
-
     clearClients: () => void;
 }
-
-export const useClientStore = create<ClientState>((set, get) => ({
+let version = 0;
+const emptyState = {
     clients: [],
+    selectedClient: null,
     isLoading: false,
     isLoaded: false,
-    selectedClient: null,
+    error: null,
+};
 
+export const useClientStore = create<ClientState>((set, get) => ({
+    ...emptyState,
     loadClients: async (forceRefresh = false) => {
-        const { isLoading, isLoaded } = get();
-
-        if (isLoading) return;
-        if (isLoaded && !forceRefresh) return;
-
-        set({ isLoading: true });
-
+        const sessionId = getSession().id;
+        if (!forceRefresh && (get().isLoading || get().isLoaded)) return;
+        const requestVersion = ++version;
+        const current = () =>
+            isCurrentSession(sessionId) && requestVersion === version;
+        set({ isLoading: true, error: null });
         try {
-            const response = await ClientService.getAll();
-
-            if (!response.success) return;
-
-            set({
-                clients: response.data ?? [],
-                isLoaded: true,
-            });
+            const clients = requireResponseData(await ClientService.getAll());
+            if (current()) set({ clients, isLoaded: true });
+        } catch (error) {
+            if (current() && !axios.isCancel(error))
+                set({
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : "Não foi possível carregar os clientes.",
+                });
         } finally {
-            set({
-                isLoading: false,
-            });
+            if (current()) set({ isLoading: false });
         }
     },
-
     clearClients: () => {
-        set({
-            clients: [],
-            isLoading: false,
-            isLoaded: false,
-        });
+        version++;
+        set(emptyState);
     },
-
-    removeClient: (clientId: number) => {
+    addClient: (client) => {
+        version++;
         set((state) => ({
-            clients: state.clients.filter(
-                (client) => client.id !== clientId
-            ),
+            clients: [
+                client,
+                ...state.clients.filter((item) => item.id !== client.id),
+            ],
+            isLoading: false,
         }));
     },
-
-    addClient: (client) =>
+    updateClient: (client) => {
+        version++;
         set((state) => ({
-            clients: [client, ...state.clients],
-        })),
-
-    updateClient: (updatedClient) =>
-        set((state) => ({
-            clients: state.clients.map((client) =>
-                client.id === updatedClient.id
-                    ? updatedClient
-                    : client
+            clients: state.clients.map((item) =>
+                item.id === client.id ? client : item,
             ),
-        })),
-
-    setSelectedClient: (client) => {
-        set({
-            selectedClient: client,
-        });
+            isLoading: false,
+        }));
     },
-
-    clearSelectedClient: () => {
-        set({
-            selectedClient: null,
-        });
+    removeClient: (id) => {
+        version++;
+        set((state) => ({
+            clients: state.clients.filter((item) => item.id !== id),
+            selectedClient:
+                state.selectedClient?.id === id ? null : state.selectedClient,
+            isLoading: false,
+        }));
     },
-    
+    setSelectedClient: (selectedClient) => set({ selectedClient }),
+    clearSelectedClient: () => set({ selectedClient: null }),
 }));

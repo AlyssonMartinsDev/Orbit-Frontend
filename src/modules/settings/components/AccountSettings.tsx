@@ -9,7 +9,9 @@ import {
 
 export function AccountSettings() {
     return (
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
+            <p role="status" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">Em desenvolvimento. Esta tela é uma prévia; os controles ainda não salvam alterações.</p>
+            <fieldset disabled className="min-w-0 space-y-6 opacity-70">
             {/* =========================================================
           HEADER
       ========================================================= */}
@@ -421,6 +423,7 @@ export function AccountSettings() {
                     </div>
                 </div>
             </div>
+        </fieldset>
         </section>
     );
 }

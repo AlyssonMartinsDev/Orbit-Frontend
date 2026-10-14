@@ -1,3 +1,5 @@
+import { formatCurrency } from "../../../shared/utils/format";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,6 +26,7 @@ import { WorkOrderTabs } from "../components/WorkOrderTabs";
 
 
 export function DashboardPage() {
+    const error = useDashboardStore((state) => state.error);
     const summary = useDashboardStore((state) => state.summary);
     const isLoading = useDashboardStore((state) => state.isLoading);
     const loadSummary = useDashboardStore((state) => state.loadSummary);
@@ -80,13 +83,10 @@ export function DashboardPage() {
     }, [loadSummary]);
 
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        }).format(value);
-    };
 
+
+
+    if (error) return <RequestError message={error} onRetry={() => void loadSummary(true)} />;
 
     if (isLoading && !summary) {
         return <Loading message="Carregando resumo do dashboard..." fullScreen />;
@@ -102,7 +102,7 @@ export function DashboardPage() {
     const openWorkOrders =
         summary?.recent_work_orders.filter(
             (workOrder) =>
-                workOrder.status_service !== "FINALIZADO"
+                (workOrder.status_service === "PENDENTE" || workOrder.status_service === "EM_ANDAMENTO")
         ) ?? [];
 
     const finishedWorkOrders =
@@ -561,6 +561,7 @@ export function DashboardPage() {
 
                     <button
                         type="button"
+                        onClick={() => navigate("/work-orders/tracking")}
                         className="
                             mt-5
                             flex
@@ -582,7 +583,7 @@ export function DashboardPage() {
                             hover:text-[#f8fafc]
                         "
                     >
-                        Ver detalhes financeiros
+                        Ver ordens de serviço
 
                         <ArrowRight
                             size={15}

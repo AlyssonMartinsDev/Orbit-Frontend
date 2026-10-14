@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useClient } from "../hooks/useClient";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { useNavigate, useParams } from "react-router-dom";
 
 // Componentes
@@ -12,10 +13,8 @@ import {
 } from "lucide-react";
 
 // Service
-import { ClientService } from "../services/client.service";
 
 // Store
-import { useClientStore } from "../../../shared/store/client.store";
 
 
 export function EditClientPage() {
@@ -28,63 +27,24 @@ export function EditClientPage() {
     // CLIENTE SELECIONADO
     // ====================================================
 
-    const selectedClient: any = useClientStore(
-        (state) => state.selectedClient
-    );
+    const { data: selectedClient, error, isLoading, refresh } = useClient(id);
 
-    const setSelectedClient = useClientStore(
-        (state) => state.setSelectedClient
-    );
-
-    const clearSelectedClient = useClientStore(
-        (state) => state.clearSelectedClient
-    );
 
 
     // ====================================================
     // CARREGAMENTO DO CLIENTE
     // ====================================================
 
-    useEffect(() => {
-        const loadClientDetails = async () => {
-            if (!id) {
-                return;
-            }
 
-            const response =
-                await ClientService.getDetails(
-                    Number(id)
-                );
-
-            if (
-                !response.success ||
-                !response.data
-            ) {
-                return;
-            }
-
-            setSelectedClient(
-                response.data
-            );
-        };
-
-        void loadClientDetails();
-
-        return () => {
-            clearSelectedClient();
-        };
-    }, [
-        id,
-        setSelectedClient,
-        clearSelectedClient,
-    ]);
 
 
     // ====================================================
     // LOADING
     // ====================================================
 
-    if (!selectedClient) {
+    if (error) return <RequestError message={error} onRetry={refresh} />;
+
+    if (isLoading || !selectedClient) {
         return (
             <Loading message="Carregando informações do cliente..." />
         );
@@ -211,7 +171,8 @@ export function EditClientPage() {
             ===================================================== */}
             <div className="mt-8">
                 <ClientForm
-                    mode="edit"
+                    key={selectedClient.id}
+                mode="edit"
                     client={selectedClient}
                 />
             </div>

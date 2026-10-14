@@ -1,75 +1,33 @@
-# React + TypeScript + Vite
+# Orbit — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicação React, TypeScript e Vite para clientes, ordens de serviço e configurações.
 
-Currently, two official plugins are available:
+## Desenvolvimento
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Configure `VITE_API_BASE_URL` no arquivo `.env.local` com a URL do backend (por exemplo, `http://127.0.0.1:8000`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Validação
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```sh
+npm run lint
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
 ```
+
+Se o Chrome já estiver instalado, use `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:e2e`.
+
+Os testes de navegador iniciam um servidor isolado na porta 4175 e interceptam as chamadas de API com dados fictícios. Cobrem as rotas em larguras de 320, 375, 768 e 1440 pixels, navegação por teclado, formulários, concorrência de buscas e recuperação de falhas. Nenhum cadastro real é alterado. Os testes unitários usam os serviços e stores reais com um adaptador HTTP em memória.
+
+## Integração
+
+- O token de autenticação fica em `orbit_token`. Login, logout, expiração e mudanças em outras abas invalidam caches e respostas antigas.
+- A edição de OS salva o serviço e os campos personalizados em duas chamadas. Se a segunda falhar, a tela informa o salvamento parcial e permite tentar novamente.
+- Os campos personalizados usam `PUT /custom-fields/{id}/custom-fields`. O backend precisa confirmar a transação desse endpoint; a correção correspondente e três testes de persistência estão no projeto backend.
+- As telas de organização, conta e usuários ainda são prévias sem persistência; seus controles estão desabilitados e identificados na interface.

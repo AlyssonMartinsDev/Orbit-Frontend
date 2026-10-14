@@ -1,4 +1,8 @@
+import { formatCurrency, formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
+import { formatPhone } from "../../../shared/utils/phone";
 import { useEffect } from "react";
+import { useClient } from "../hooks/useClient";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -18,9 +22,7 @@ import {
     UserRound,
 } from "lucide-react";
 
-import { ClientService } from "../services/client.service";
 
-import { useClientStore } from "../../../shared/store/client.store";
 import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
 
 import { Loading } from "../../../shared/components/loading";
@@ -46,17 +48,8 @@ export function ClientDetailsPage() {
     // CLIENTE SELECIONADO
     // ========================================================
 
-    const selectedClient = useClientStore(
-        (state) => state.selectedClient
-    );
+    const { data: selectedClient, error, isLoading, refresh } = useClient(id);
 
-    const setSelectedClient = useClientStore(
-        (state) => state.setSelectedClient
-    );
-
-    const clearSelectedClient = useClientStore(
-        (state) => state.clearSelectedClient
-    );
 
 
     // ========================================================
@@ -76,57 +69,16 @@ export function ClientDetailsPage() {
     // CARREGAMENTO
     // ========================================================
 
-    useEffect(() => {
-
-        const loadClientDetails = async () => {
-
-            if (!id) {
-                return;
-            }
-
-
-            const response =
-                await ClientService.getDetails(
-                    Number(id)
-                );
-
-
-            if (
-                !response.success ||
-                !response.data
-            ) {
-                return;
-            }
-
-
-            setSelectedClient(
-                response.data
-            );
-        };
-
-
-        void loadClientDetails();
-
-        void loadCustomFields();
-
-
-        return () => {
-            clearSelectedClient();
-        };
-
-    }, [
-        id,
-        setSelectedClient,
-        clearSelectedClient,
-        loadCustomFields,
-    ]);
+    useEffect(() => { void loadCustomFields(); }, [loadCustomFields]);
 
 
     // ========================================================
     // LOADING
     // ========================================================
 
-    if (!selectedClient) {
+    if (error) return <RequestError message={error} onRetry={refresh} />;
+
+    if (isLoading || !selectedClient) {
 
         return (
             <Loading
@@ -140,91 +92,16 @@ export function ClientDetailsPage() {
     // FORMATADORES
     // ========================================================
 
-    const formatCurrency = (
-        value: number
-    ) => {
-
-        return new Intl.NumberFormat(
-            "pt-BR",
-            {
-                style: "currency",
-                currency: "BRL",
-            }
-        ).format(value);
-    };
 
 
-    const formatDate = (
-        date: string
-    ) => {
-
-        return new Intl.DateTimeFormat(
-            "pt-BR"
-        ).format(
-            new Date(date)
-        );
-    };
 
 
-    const formatCustomDate = (
-        date: string
-    ) => {
-
-        /*
-         * Adicionamos o horário manualmente para evitar
-         * alteração da data causada por timezone.
-         *
-         * Exemplo:
-         * 2026-10-06 -> 06/10/2026
-         */
-
-        const parsedDate =
-            new Date(`${date}T00:00:00`);
 
 
-        if (
-            Number.isNaN(
-                parsedDate.getTime()
-            )
-        ) {
-            return date;
-        }
 
 
-        return new Intl.DateTimeFormat(
-            "pt-BR"
-        ).format(parsedDate);
-    };
 
 
-    const formatPhone = (
-        phone: string
-    ) => {
-
-        const digits =
-            phone.replace(/\D/g, "");
-
-
-        if (digits.length === 11) {
-
-            return digits.replace(
-                /(\d{2})(\d{5})(\d{4})/,
-                "($1) $2-$3"
-            );
-        }
-
-
-        if (digits.length === 10) {
-
-            return digits.replace(
-                /(\d{2})(\d{4})(\d{4})/,
-                "($1) $2-$3"
-            );
-        }
-
-
-        return phone;
-    };
 
 
     // ========================================================

@@ -44,6 +44,8 @@ export function PhoneInput({
 
     return (
         <input
+            pattern="\(?[0-9]{2}\)?\s?[0-9]{4,5}-?[0-9]{4}"
+            title="Informe o DDD e um telefone com 10 ou 11 dígitos."
             {...props}
             type="text"
             inputMode="numeric"

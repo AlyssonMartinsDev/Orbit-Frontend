@@ -1,103 +1,44 @@
-// ============================================================
-// CUSTOM FIELDS DO CLIENTE
-// ============================================================
+import type { PaymentStatus, WorkOrderStatus } from "../../work-orders/types/work-order.types";
 
-export interface ClientCustomValueRequest {
-  field_definition_id: number;
-  value: string | null;
+export interface ClientCustomValueRequest { field_definition_id: number; value: string | null }
+export interface ClientCustomValueResponse extends ClientCustomValueRequest { id: number }
+
+export interface ClientData {
+    name: string;
+    phone: string;
+    email: string | null;
+    notes: string | null;
+    custom_values: ClientCustomValueRequest[];
 }
 
+export type CreateClientRequest = ClientData;
+export type UpdateClientRequest = Partial<ClientData>;
 
-export interface ClientCustomValueResponse {
-  id: number;
-  field_definition_id: number;
-  value: string | null;
+export interface ClientResponse extends Omit<ClientData, "custom_values"> {
+    id: number;
+    created_at: string;
+    updated_at: string;
+    custom_values: ClientCustomValueResponse[];
 }
-
-
-// ============================================================
-// CRIAÇÃO / EDIÇÃO
-// ============================================================
-
-export interface CreateClientRequest {
-  name: string;
-  phone: string;
-  email: string;
-  cpf: string;
-  notes: string;
-
-  custom_values: ClientCustomValueRequest[];
-}
-
-
-export interface UpdateClientRequest {
-  name?: string;
-  phone?: string;
-  email?: string;
-  cpf?: string;
-  notes?: string;
-
-  custom_values?: ClientCustomValueRequest[];
-}
-
-
-// ============================================================
-// CLIENTE
-// ============================================================
-
-export interface ClientResponse {
-  id: number;
-
-  name: string;
-  phone: string;
-  email: string;
-  cpf: string;
-  notes: string;
-
-  created_at: string;
-  updated_at: string;
-
-  custom_values: ClientCustomValueResponse[];
-}
-
-
-// ============================================================
-// DETALHES DO CLIENTE
-// ============================================================
 
 export interface ClientDetailsSummary {
-  total_work_orders: number;
-  open_work_orders: number;
-  finished_work_orders: number;
-  total_services_value: number;
+    total_work_orders: number;
+    open_work_orders: number;
+    finished_work_orders: number;
+    total_services_value: number;
 }
-
 
 export interface ClientWorkOrder {
-  id: number;
-
-  title: string;
-
-  status_service: string;
-  status_payment: string;
-
-  price: number;
-
-  created_at: string;
+    id: number;
+    title: string;
+    status_service: WorkOrderStatus;
+    status_payment: PaymentStatus;
+    price: number;
+    created_at: string;
 }
 
-
-export interface ClientDetailsResponse {
-  id: number;
-
-  name: string;
-  phone: string;
-  email: string | null;
-  notes: string | null;
-
-  custom_values: ClientCustomValueResponse[];
-
-  summary: ClientDetailsSummary;
-
-  work_orders: ClientWorkOrder[];
+export interface ClientDetailsResponse extends Omit<ClientResponse, "created_at" | "updated_at"> {
+    cpf?: string | null;
+    summary: ClientDetailsSummary;
+    work_orders: ClientWorkOrder[];
 }

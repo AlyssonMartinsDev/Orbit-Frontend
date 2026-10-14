@@ -1,776 +1,306 @@
-// icones
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
 import {
+    ChevronLeft,
+    ChevronRight,
     ClipboardList,
     Pencil,
     Search,
     Trash2,
     Users,
 } from "lucide-react";
-
-// navigation
-import { useNavigate } from "react-router-dom";
-
-// Services
-import { ClientService } from "../services/client.service";
-
-// Hooks
-import { useEffect, useState } from "react";
+import { getSession, isCurrentSession } from "../../../shared/services/session";
 import { useClientStore } from "../../../shared/store/client.store";
+import { useDashboardStore } from "../../../shared/store/dashboard.store";
 import { useMessageStore } from "../../../shared/store/message.store";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
+import { Modal } from "../../../shared/components/modal";
+import {
+    inputClass,
+    primaryButtonClass,
+    secondaryButtonClass,
+} from "../../../shared/components/form/FormSection";
+import { formatPhone } from "../../../shared/utils/phone";
+import { ClientService } from "../services/client.service";
+import type { ClientResponse } from "../types/client.types";
 
+const PAGE_SIZE = 20;
+const actionClass =
+    "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#16345c] p-3 hover:bg-[#0a2242] disabled:opacity-50";
 
 export function ClientTable() {
-    // ====================================================
-    // STORE
-    // ====================================================
-
-    const clients = useClientStore(
-        (state) => state.clients
-    );
-
-    const loading = useClientStore(
-        (state) => state.isLoading
-    );
-
-    const loadClients = useClientStore(
-        (state) => state.loadClients
-    );
-
-    const removeClient = useClientStore(
-        (state) => state.removeClient
-    );
-
-    const showMessage = useMessageStore(
-        (state) => state.showMessage
-    );
-
-    const navigate = useNavigate();
-
-
-    // ====================================================
-    // BUSCA
-    // ====================================================
-
+    const { clients, isLoading, error, loadClients, removeClient } =
+        useClientStore();
+    const showMessage = useMessageStore((state) => state.showMessage);
+    const [sessionId] = useState(() => getSession().id);
     const [search, setSearch] = useState("");
-
-    const filteredClients = clients.filter((client) => {
-        const searchLower = search.toLowerCase();
-
-        return (
-            client.name
-                .toLowerCase()
-                .includes(searchLower) ||
-            client.phone
-                .toLowerCase()
-                .includes(searchLower) ||
-            client.email
-                ?.toLowerCase()
-                .includes(searchLower)
-        );
-    });
-
-
-    // ====================================================
-    // CARREGAMENTO
-    // ====================================================
-
+    const deferredSearch = useDeferredValue(search);
+    const [page, setPage] = useState(1);
+    const [deleting, setDeleting] = useState<ClientResponse | null>(null);
+    const [busy, setBusy] = useState(false);
+    const pending = useRef(false);
     useEffect(() => {
         void loadClients();
     }, [loadClients]);
-
-
-    // ====================================================
-    // EXCLUSÃO
-    // ====================================================
-
-    const handleDelete = async (
-        clientId: number
-    ) => {
-        const confirmed = window.confirm(
-            "Tem certeza que deseja excluir este cliente?"
+    const filtered = useMemo(() => {
+        const query = deferredSearch.trim().toLocaleLowerCase("pt-BR");
+        const digits = query.replace(/\D/g, "");
+        return clients.filter(
+            (client) =>
+                client.name.toLocaleLowerCase("pt-BR").includes(query) ||
+                client.email?.toLocaleLowerCase("pt-BR").includes(query) ||
+                (digits.length > 0 &&
+                    client.phone.replace(/\D/g, "").includes(digits)),
         );
-
-        if (!confirmed) {
+    }, [clients, deferredSearch]);
+    const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    const currentPage = Math.min(page, pages);
+    const visibleClients = filtered.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE,
+    );
+    const handleDelete = async () => {
+        if (!deleting || pending.current || !isCurrentSession(sessionId))
             return;
-        }
-
+        pending.current = true;
+        setBusy(true);
         try {
-            const response =
-                await ClientService.delete(clientId);
-
+            const response = await ClientService.delete(deleting.id);
+            if (!isCurrentSession(sessionId)) return;
             if (!response.success) {
                 showMessage(
-                    response.message,
-                    "error"
+                    response.message || "Não foi possível excluir o cliente.",
+                    "error",
                 );
-
                 return;
             }
-
-            removeClient(clientId);
-
-            showMessage(
-                "Cliente excluído com sucesso.",
-                "success"
-            );
+            removeClient(deleting.id);
+            useDashboardStore.getState().clearSummary();
+            setDeleting(null);
+            showMessage("Cliente excluído com sucesso.", "success");
         } catch (error) {
-            console.error(
-                "Error deleting client:",
-                error
-            );
-
-            showMessage(
-                "Erro ao excluir cliente.",
-                "error"
-            );
+            if (isCurrentSession(sessionId) && !axios.isCancel(error))
+                showMessage(
+                    "Não foi possível excluir o cliente. Tente novamente.",
+                    "error",
+                );
+        } finally {
+            pending.current = false;
+            setBusy(false);
         }
     };
-
-
     return (
-        <section
-            className="
-                overflow-hidden
-                rounded-2xl
-                border border-[#16345c]/35
-                bg-[#051020]/70
-                shadow-[0_18px_50px_rgba(0,0,0,0.18)]
-            "
-        >
-            {/* =====================================================
-                HEADER
-            ===================================================== */}
-            <div
-                className="
-                    border-b border-[#16345c]/25
-                    px-5 py-5
-                    sm:px-6
-                "
-            >
-                <div
-                    className="
-                        flex
-                        flex-col
-                        gap-5
-                        lg:flex-row
-                        lg:items-center
-                        lg:justify-between
-                    "
-                >
-                    <div className="flex items-center gap-3">
-                        <div
-                            className="
-                                flex
-                                h-10 w-10
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-xl
-                                border border-[#2583ff]/15
-                                bg-[#2583ff]/10
-                                text-[#3692ff]
-                                shadow-[0_0_18px_rgba(37,131,255,0.08)]
-                            "
-                        >
-                            <Users
-                                size={19}
-                                strokeWidth={1.8}
-                            />
-                        </div>
-
-                        <div>
-                            <h2
-                                className="
-                                    text-lg
-                                    font-semibold
-                                    text-[#f8fafc]
-                                    sm:text-xl
-                                "
-                            >
-                                Clientes cadastrados
-                            </h2>
-
-                            <p
-                                className="
-                                    mt-1
-                                    text-sm
-                                    text-[#8290a8]
-                                "
-                            >
-                                Lista de todos os clientes
-                                cadastrados no sistema.
-                            </p>
-                        </div>
-                    </div>
-
-
-                    {/* BUSCA */}
-                    <div
-                        className="
-                            relative
-                            w-full
-                            lg:max-w-md
-                        "
-                    >
-                        <Search
-                            size={17}
-                            strokeWidth={1.8}
-                            className="
-                                absolute
-                                left-4
-                                top-1/2
-                                -translate-y-1/2
-                                text-[#56657d]
-                            "
-                        />
-
-                        <input
-                            type="text"
-                            placeholder="Buscar por nome, telefone ou e-mail..."
-                            value={search}
-                            onChange={(event) =>
-                                setSearch(
-                                    event.target.value
-                                )
-                            }
-                            className="
-                                w-full
-                                rounded-xl
-                                border border-[#16345c]/40
-                                bg-[#010b1b]/55
-                                py-3
-                                pl-11 pr-4
-                                text-sm
-                                text-[#f8fafc]
-                                outline-none
-                                transition-all
-                                duration-200
-
-                                placeholder:text-[#56657d]
-
-                                focus:border-[#2583ff]/55
-                                focus:shadow-[0_0_0_3px_rgba(37,131,255,0.08)]
-                            "
-                        />
-                    </div>
-                </div>
-            </div>
-
-
-            {/* =====================================================
-                DESKTOP
-            ===================================================== */}
-            <div className="hidden lg:block">
-                {loading ? (
-                    <div
-                        className="
-                            p-10
-                            text-center
-                            text-sm
-                            text-[#8290a8]
-                        "
-                    >
-                        Carregando clientes...
-                    </div>
-                ) : filteredClients.length === 0 ? (
-                    <div
-                        className="
-                            m-6
-                            rounded-xl
-                            border border-dashed border-[#16345c]/40
-                            bg-[#010b1b]/25
-                            p-10
-                            text-center
-                        "
-                    >
-                        <Users
-                            size={26}
-                            strokeWidth={1.5}
-                            className="
-                                mx-auto
-                                text-[#56657d]
-                            "
-                        />
-
-                        <p
-                            className="
-                                mt-3
-                                text-sm
-                                text-[#8290a8]
-                            "
-                        >
-                            {search
-                                ? "Nenhum cliente corresponde à busca."
-                                : "Nenhum cliente cadastrado."}
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#16345c]/60 bg-[#051020]/70">
+            <header className="flex flex-col gap-4 border-b border-[#16345c]/40 p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-3">
+                    <Users className="shrink-0 text-blue-400" />
+                    <div>
+                        <h2 className="font-semibold">Clientes cadastrados</h2>
+                        <p className="mt-1 text-sm text-[#a7b4c8]">
+                            {filtered.length}{" "}
+                            {filtered.length === 1
+                                ? "cliente encontrado"
+                                : "clientes encontrados"}
                         </p>
                     </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead
-                                className="
-                                    border-b border-[#16345c]/25
-                                    bg-[#010b1b]/30
-                                "
-                            >
+                </div>
+                <label className="relative block w-full lg:max-w-sm">
+                    <span className="sr-only">Buscar clientes</span>
+                    <Search
+                        size={18}
+                        className="pointer-events-none absolute left-3 top-4 text-[#8290a8]"
+                    />
+                    <input
+                        type="search"
+                        placeholder="Nome, telefone ou e-mail"
+                        value={search}
+                        onChange={(event) => {
+                            setSearch(event.target.value);
+                            setPage(1);
+                        }}
+                        className={`${inputClass} pl-10`}
+                    />
+                </label>
+            </header>
+            {error ? (
+                <div className="p-4">
+                    <RequestError
+                        message={error}
+                        onRetry={() => void loadClients(true)}
+                    />
+                </div>
+            ) : isLoading ? (
+                <p role="status" className="p-6 text-sm text-[#a7b4c8]">
+                    Carregando clientes…
+                </p>
+            ) : filtered.length === 0 ? (
+                <p role="status" className="p-6 text-sm text-[#a7b4c8]">
+                    {search
+                        ? "Nenhum cliente encontrado para esta busca."
+                        : "Nenhum cliente cadastrado."}
+                </p>
+            ) : (
+                <>
+                    <ul className="divide-y divide-[#16345c]/40 md:hidden">
+                        {visibleClients.map((client) => (
+                            <li key={client.id} className="min-w-0 p-4">
+                                <p className="break-words font-medium">
+                                    {client.name}
+                                </p>
+                                <p className="mt-2 text-sm text-[#a7b4c8]">
+                                    {formatPhone(client.phone)}
+                                </p>
+                                <p className="mt-1 break-all text-sm text-[#a7b4c8]">
+                                    {client.email || "E-mail não informado"}
+                                </p>
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <ClientActions
+                                        client={client}
+                                        onDelete={() => setDeleting(client)}
+                                    />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                    <div className="hidden overflow-x-auto md:block">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-[#07182d] text-[#a7b4c8]">
                                 <tr>
-                                    <th
-                                        className="
-                                            px-6 py-4
-                                            text-left
-                                            text-xs
-                                            font-medium
-                                            uppercase
-                                            tracking-wide
-                                            text-[#8290a8]
-                                        "
-                                    >
+                                    <th scope="col" className="p-4">
                                         Nome
                                     </th>
-
-                                    <th
-                                        className="
-                                            px-6 py-4
-                                            text-left
-                                            text-xs
-                                            font-medium
-                                            uppercase
-                                            tracking-wide
-                                            text-[#8290a8]
-                                        "
-                                    >
-                                        Telefone
+                                    <th scope="col" className="p-4">
+                                        Contato
                                     </th>
-
-                                    <th
-                                        className="
-                                            px-6 py-4
-                                            text-left
-                                            text-xs
-                                            font-medium
-                                            uppercase
-                                            tracking-wide
-                                            text-[#8290a8]
-                                        "
-                                    >
-                                        E-mail
-                                    </th>
-
-                                    <th
-                                        className="
-                                            px-6 py-4
-                                            text-right
-                                            text-xs
-                                            font-medium
-                                            uppercase
-                                            tracking-wide
-                                            text-[#8290a8]
-                                        "
-                                    >
+                                    <th scope="col" className="p-4 text-right">
                                         Ações
                                     </th>
                                 </tr>
                             </thead>
-
-
-                            <tbody>
-                                {filteredClients.map(
-                                    (client) => (
-                                        <tr
-                                            key={client.id}
-                                            className="
-                                                border-b border-[#16345c]/20
-                                                transition-colors
-                                                duration-200
-                                                last:border-b-0
-                                                hover:bg-[#07182d]/45
-                                            "
-                                        >
-                                            <td
-                                                className="
-                                                    px-6 py-4
-                                                    text-sm
-                                                    font-medium
-                                                    text-[#f8fafc]
-                                                "
-                                            >
-                                                {client.name}
-                                            </td>
-
-                                            <td
-                                                className="
-                                                    px-6 py-4
-                                                    text-sm
-                                                    text-[#a7b4c8]
-                                                "
-                                            >
-                                                {client.phone}
-                                            </td>
-
-                                            <td
-                                                className="
-                                                    px-6 py-4
-                                                    text-sm
-                                                    text-[#8290a8]
-                                                "
-                                            >
-                                                {client.email ||
-                                                    "Não informado"}
-                                            </td>
-
-                                            <td className="px-6 py-4">
-                                                <div
-                                                    className="
-                                                        flex
-                                                        justify-end
-                                                        gap-1
-                                                    "
-                                                >
-                                                    {/* DETALHES */}
-                                                    <button
-                                                        type="button"
-                                                        title="Detalhes"
-                                                        onClick={() =>
-                                                            navigate(
-                                                                `/clients/${client.id}/details`
-                                                            )
-                                                        }
-                                                        className="
-                                                            flex
-                                                            h-9 w-9
-                                                            items-center
-                                                            justify-center
-                                                            rounded-lg
-                                                            border border-transparent
-                                                            text-[#56657d]
-                                                            transition-all
-                                                            duration-200
-
-                                                            hover:border-[#2583ff]/20
-                                                            hover:bg-[#2583ff]/10
-                                                            hover:text-[#3692ff]
-                                                        "
-                                                    >
-                                                        <ClipboardList
-                                                            size={17}
-                                                            strokeWidth={
-                                                                1.8
-                                                            }
-                                                        />
-                                                    </button>
-
-
-                                                    {/* EDITAR */}
-                                                    <button
-                                                        type="button"
-                                                        title="Editar"
-                                                        onClick={() =>
-                                                            navigate(
-                                                                `/clients/${client.id}/edit`
-                                                            )
-                                                        }
-                                                        className="
-                                                            flex
-                                                            h-9 w-9
-                                                            items-center
-                                                            justify-center
-                                                            rounded-lg
-                                                            border border-transparent
-                                                            text-[#56657d]
-                                                            transition-all
-                                                            duration-200
-
-                                                            hover:border-[#2583ff]/20
-                                                            hover:bg-[#07182d]
-                                                            hover:text-[#f8fafc]
-                                                        "
-                                                    >
-                                                        <Pencil
-                                                            size={17}
-                                                            strokeWidth={
-                                                                1.8
-                                                            }
-                                                        />
-                                                    </button>
-
-
-                                                    {/* EXCLUIR */}
-                                                    <button
-                                                        type="button"
-                                                        title="Excluir"
-                                                        onClick={() =>
-                                                            handleDelete(
-                                                                client.id
-                                                            )
-                                                        }
-                                                        className="
-                                                            flex
-                                                            h-9 w-9
-                                                            items-center
-                                                            justify-center
-                                                            rounded-lg
-                                                            border border-transparent
-                                                            text-[#56657d]
-                                                            transition-all
-                                                            duration-200
-
-                                                            hover:border-red-500/20
-                                                            hover:bg-red-500/10
-                                                            hover:text-red-400
-                                                        "
-                                                    >
-                                                        <Trash2
-                                                            size={17}
-                                                            strokeWidth={
-                                                                1.8
-                                                            }
-                                                        />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                )}
+                            <tbody className="divide-y divide-[#16345c]/40">
+                                {visibleClients.map((client) => (
+                                    <tr key={client.id}>
+                                        <td className="max-w-xs break-words p-4 font-medium">
+                                            {client.name}
+                                        </td>
+                                        <td className="max-w-xs break-all p-4 text-[#a7b4c8]">
+                                            {formatPhone(client.phone)}
+                                            <br />
+                                            {client.email ||
+                                                "E-mail não informado"}
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex justify-end gap-2">
+                                                <ClientActions
+                                                    client={client}
+                                                    onDelete={() =>
+                                                        setDeleting(client)
+                                                    }
+                                                />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
-                )}
-            </div>
-
-
-            {/* =====================================================
-                MOBILE
-            ===================================================== */}
-            <div className="space-y-3 p-4 lg:hidden">
-                {loading && (
-                    <div
-                        className="
-                            rounded-xl
-                            border border-dashed border-[#16345c]/40
-                            bg-[#010b1b]/25
-                            p-6
-                            text-center
-                            text-sm
-                            text-[#8290a8]
-                        "
+                    <nav
+                        aria-label="Paginação de clientes"
+                        className="flex flex-wrap items-center justify-between gap-3 border-t border-[#16345c]/40 p-4"
                     >
-                        Carregando clientes...
-                    </div>
-                )}
-
-
-                {!loading &&
-                    filteredClients.length === 0 && (
-                        <div
-                            className="
-                                rounded-xl
-                                border border-dashed border-[#16345c]/40
-                                bg-[#010b1b]/25
-                                p-6
-                                text-center
-                            "
-                        >
-                            <Users
-                                size={24}
-                                strokeWidth={1.5}
-                                className="
-                                    mx-auto
-                                    text-[#56657d]
-                                "
-                            />
-
-                            <p
-                                className="
-                                    mt-3
-                                    text-sm
-                                    text-[#8290a8]
-                                "
+                        <span className="text-sm text-[#a7b4c8]">
+                            Página {currentPage} de {pages}
+                        </span>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                aria-label="Página anterior"
+                                disabled={currentPage <= 1}
+                                className={actionClass}
+                                onClick={() => setPage(currentPage - 1)}
                             >
-                                {search
-                                    ? "Nenhum cliente corresponde à busca."
-                                    : "Nenhum cliente encontrado."}
-                            </p>
+                                <ChevronLeft size={18} />
+                            </button>
+                            <button
+                                type="button"
+                                aria-label="Próxima página"
+                                disabled={currentPage >= pages}
+                                className={actionClass}
+                                onClick={() => setPage(currentPage + 1)}
+                            >
+                                <ChevronRight size={18} />
+                            </button>
                         </div>
-                    )}
-
-
-                {!loading &&
-                    filteredClients.map((client) => (
-                        <article
-                            key={client.id}
-                            className="
-                                rounded-xl
-                                border border-[#16345c]/30
-                                bg-[#010b1b]/35
-                                p-5
-                                transition-all
-                                duration-200
-
-                                hover:border-[#2583ff]/20
-                                hover:bg-[#07182d]/45
-                            "
-                        >
-                            <div>
-                                <p
-                                    className="
-                                        text-base
-                                        font-semibold
-                                        text-[#f8fafc]
-                                    "
-                                >
-                                    {client.name}
-                                </p>
-
-                                <div
-                                    className="
-                                        mt-4
-                                        space-y-2
-                                        text-sm
-                                        text-[#8290a8]
-                                    "
-                                >
-                                    <p>
-                                        <span className="text-[#56657d]">
-                                            Telefone:
-                                        </span>{" "}
-                                        {client.phone}
-                                    </p>
-
-                                    <p>
-                                        <span className="text-[#56657d]">
-                                            E-mail:
-                                        </span>{" "}
-                                        {client.email ||
-                                            "Não informado"}
-                                    </p>
-
-                                    <p>
-                                        <span className="text-[#56657d]">
-                                            CPF:
-                                        </span>{" "}
-                                        {client.cpf ||
-                                            "Não informado"}
-                                    </p>
-                                </div>
-                            </div>
-
-
-                            {/* AÇÕES */}
-                            <div
-                                className="
-                                    mt-5
-                                    grid
-                                    grid-cols-3
-                                    gap-2
-                                    border-t border-[#16345c]/20
-                                    pt-4
-                                "
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        navigate(
-                                            `/clients/${client.id}/details`
-                                        )
-                                    }
-                                    className="
-                                        flex
-                                        items-center
-                                        justify-center
-                                        gap-2
-                                        rounded-lg
-                                        border border-[#16345c]/30
-                                        bg-[#07182d]/35
-                                        px-3 py-2.5
-                                        text-xs
-                                        font-medium
-                                        text-[#8290a8]
-                                        transition-all
-
-                                        hover:border-[#2583ff]/25
-                                        hover:bg-[#2583ff]/10
-                                        hover:text-[#3692ff]
-                                    "
-                                >
-                                    <ClipboardList
-                                        size={15}
-                                        strokeWidth={1.8}
-                                    />
-
-                                    Detalhes
-                                </button>
-
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        navigate(
-                                            `/clients/${client.id}/edit`
-                                        )
-                                    }
-                                    className="
-                                        flex
-                                        items-center
-                                        justify-center
-                                        gap-2
-                                        rounded-lg
-                                        border border-[#16345c]/30
-                                        bg-[#07182d]/35
-                                        px-3 py-2.5
-                                        text-xs
-                                        font-medium
-                                        text-[#8290a8]
-                                        transition-all
-
-                                        hover:border-[#2583ff]/20
-                                        hover:bg-[#0a2242]/55
-                                        hover:text-[#f8fafc]
-                                    "
-                                >
-                                    <Pencil
-                                        size={15}
-                                        strokeWidth={1.8}
-                                    />
-
-                                    Editar
-                                </button>
-
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        handleDelete(client.id)
-                                    }
-                                    className="
-                                        flex
-                                        items-center
-                                        justify-center
-                                        gap-2
-                                        rounded-lg
-                                        border border-[#16345c]/30
-                                        bg-[#07182d]/35
-                                        px-3 py-2.5
-                                        text-xs
-                                        font-medium
-                                        text-[#8290a8]
-                                        transition-all
-
-                                        hover:border-red-500/20
-                                        hover:bg-red-500/10
-                                        hover:text-red-400
-                                    "
-                                >
-                                    <Trash2
-                                        size={15}
-                                        strokeWidth={1.8}
-                                    />
-
-                                    Excluir
-                                </button>
-                            </div>
-                        </article>
-                    ))}
-            </div>
+                    </nav>
+                </>
+            )}
+            <Modal
+                open={!!deleting}
+                title="Excluir cliente"
+                subtitle={deleting?.name}
+                onClose={() => {
+                    if (!pending.current) setDeleting(null);
+                }}
+            >
+                <p className="text-sm leading-6 text-[#a7b4c8]">
+                    Deseja excluir este cliente? Esta ação não pode ser
+                    desfeita.
+                </p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setDeleting(null)}
+                        className={secondaryButtonClass}
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleDelete()}
+                        className={`${primaryButtonClass} bg-red-700 hover:bg-red-600`}
+                    >
+                        {busy ? "Excluindo…" : "Confirmar exclusão"}
+                    </button>
+                </div>
+            </Modal>
         </section>
+    );
+}
+
+function ClientActions({
+    client,
+    onDelete,
+}: {
+    client: ClientResponse;
+    onDelete: () => void;
+}) {
+    return (
+        <>
+            <Link
+                to={`/clients/${client.id}/details`}
+                className={actionClass}
+                aria-label={`Detalhes de ${client.name}`}
+            >
+                <ClipboardList size={18} />
+            </Link>
+            <Link
+                to={`/clients/${client.id}/edit`}
+                className={actionClass}
+                aria-label={`Editar ${client.name}`}
+            >
+                <Pencil size={18} />
+            </Link>
+            <button
+                type="button"
+                onClick={onDelete}
+                className={`${actionClass} text-red-300`}
+                aria-label={`Excluir ${client.name}`}
+            >
+                <Trash2 size={18} />
+            </button>
+        </>
     );
 }

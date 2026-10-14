@@ -1,35 +1,40 @@
+import { X } from "lucide-react";
 import { useMessageStore } from "../../store/message.store";
 
 const messageStyles = {
-  success: "border-green-500/30 bg-green-500/15 text-green-200",
-  error: "border-red-500/30 bg-red-500/15 text-red-200",
-  warning: "border-yellow-500/30 bg-yellow-500/15 text-yellow-200",
-  info: "border-blue-500 bg-white text-blue-700 shadow-blue-500/10",
+    success: "border-green-400/40 bg-[#09291c] text-green-100",
+    error: "border-red-400/40 bg-[#35151b] text-red-100",
+    warning: "border-amber-400/40 bg-[#33260d] text-amber-100",
+    info: "border-blue-400/40 bg-[#0a2242] text-blue-100",
+};
+const titles = {
+    success: "Sucesso",
+    error: "Erro",
+    warning: "Atenção",
+    info: "Informação",
 };
 
 export function GlobalMessage() {
-  const message = useMessageStore((state) => state.message);
-  const type = useMessageStore((state) => state.type);
-  const isVisible = useMessageStore((state) => state.isVisible);
-
-  if (!isVisible || !message) {
-    return null;
-  }
-
-  return (
-    <div className="fixed left-1/2 top-6 z-50 -translate-x-1/2 animate-[slideDown_0.35s_ease-out]">
-      <div
-        className={`min-w-80 max-w-md rounded-2xl border px-6 py-4 text-sm shadow-2xl backdrop-blur-xl ${messageStyles[type]}`}
-      >
-        <p className="font-semibold">
-          {type === "success" && "Sucesso"}
-          {type === "error" && "Erro"}
-          {type === "warning" && "Atenção"}
-          {type === "info" && "Informação"}
-        </p>
-
-        <p className="mt-1 text-sm opacity-90">{message}</p>
-      </div>
-    </div>
-  );
+    const { message, type, isVisible, hideMessage } = useMessageStore();
+    if (!isVisible || !message) return null;
+    return (
+        <div
+            role={type === "error" ? "alert" : "status"}
+            aria-live={type === "error" ? "assertive" : "polite"}
+            className={`fixed left-3 right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[1100] mx-auto flex max-w-md items-start gap-2 rounded-2xl border p-4 text-sm shadow-2xl ${messageStyles[type]}`}
+        >
+            <div className="min-w-0 flex-1 break-words">
+                <p className="font-semibold">{titles[type]}</p>
+                <p className="mt-1">{message}</p>
+            </div>
+            <button
+                type="button"
+                onClick={hideMessage}
+                aria-label="Fechar mensagem"
+                className="-m-2 ml-0 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-white/10"
+            >
+                <X size={18} />
+            </button>
+        </div>
+    );
 }

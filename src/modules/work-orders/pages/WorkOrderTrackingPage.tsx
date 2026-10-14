@@ -1,3 +1,6 @@
+import { formatCurrency, formatDate } from "../../../shared/utils/format";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
+import { useWorkOrders } from "../hooks/useWorkOrders";
 import {
     CalendarDays,
     ChevronDown,
@@ -5,7 +8,6 @@ import {
     ChevronRight,
     CircleDollarSign,
     ClipboardList,
-    Filter,
     MoreHorizontal,
     RotateCcw,
     Search,
@@ -15,7 +17,6 @@ import {
 import { WorkOrderDetailsModal } from "../components/WorkOrderDetailsModal";
 
 import {
-    useCallback,
     useEffect,
     useRef,
     useState,
@@ -26,7 +27,6 @@ import type {
     ReactNode,
 } from "react";
 
-import { WorkOrderService } from "../services/work-order.service";
 
 import type {
     PaymentStatus as PaymentStatusType,
@@ -135,38 +135,17 @@ export function WorkOrderTrackingPage() {
     // ORDENS DE SERVIÇO
     // =========================================================
 
-    const [workOrders, setWorkOrders] =
-        useState<WorkOrderListItem[]>([]);
-
-    const [page, setPage] =
-        useState(1);
-
-    const [pageSize] =
-        useState(20);
-
-    const [total, setTotal] =
-        useState(0);
-
-    const [totalPages, setTotalPages] =
-        useState(0);
-
-    const [summary, setSummary] =
-        useState({
-            all: 0,
-            pending: 0,
-        });
-
-
-    // =========================================================
-    // ESTADO DA REQUISIÇÃO
-    // =========================================================
-
-    const [isLoading, setIsLoading] =
-        useState(true);
-
-    const [error, setError] =
-        useState<string | null>(null);
-
+    const [page, setPage] = useState(1);
+    const pageSize = 20;
+    const { data, error, isLoading, refresh: loadWorkOrders } = useWorkOrders({
+        page, page_size: pageSize, tab: activeTab, search: debouncedSearch || undefined,
+        start_date: startDate || undefined, end_date: endDate || undefined,
+        status_service: serviceStatus || undefined, status_payment: paymentStatus || undefined,
+    });
+    const workOrders = data?.items ?? [];
+    const total = data?.pagination.total ?? 0;
+    const totalPages = data?.pagination.total_pages ?? 0;
+    const summary = data?.summary ?? { all: 0, pending: 0 };
 
     // =========================================================
     // MODAL DE AÇÕES
@@ -224,118 +203,6 @@ export function WorkOrderTrackingPage() {
         };
 
     }, [search]);
-
-
-    // =========================================================
-    // CARREGAMENTO DAS ORDENS DE SERVIÇO
-    // =========================================================
-
-    /*
-     * Agora loadWorkOrders fica fora do useEffect.
-     *
-     * Isso permite utilizar a mesma função:
-     *
-     * - no carregamento normal da página;
-     * - ao trocar filtros;
-     * - ao trocar página;
-     * - depois de atualizar uma OS;
-     * - depois de excluir uma OS.
-     */
-    const loadWorkOrders =
-        useCallback(async () => {
-
-            try {
-
-                setIsLoading(true);
-                setError(null);
-
-                const response =
-                    await WorkOrderService.getTracking({
-                        page,
-                        page_size: pageSize,
-                        tab: activeTab,
-                        search:
-                            debouncedSearch ||
-                            undefined,
-                        start_date:
-                            startDate ||
-                            undefined,
-                        end_date:
-                            endDate ||
-                            undefined,
-                        status_service:
-                            serviceStatus ||
-                            undefined,
-                        status_payment:
-                            paymentStatus ||
-                            undefined,
-                    });
-
-
-                if (!response.data) {
-                    throw new Error(
-                        response.message ||
-                        "Resposta inválida ao carregar ordens de serviço."
-                    );
-                }
-
-
-                const data =
-                    response.data;
-
-
-                setWorkOrders(
-                    data.items
-                );
-
-                setTotal(
-                    data.pagination.total
-                );
-
-                setTotalPages(
-                    data.pagination.total_pages
-                );
-
-                setSummary(
-                    data.summary
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Erro ao carregar ordens de serviço:",
-                    error
-                );
-
-                setError(
-                    "Não foi possível carregar as ordens de serviço."
-                );
-
-            } finally {
-
-                setIsLoading(false);
-
-            }
-
-        }, [
-            activeTab,
-            debouncedSearch,
-            startDate,
-            endDate,
-            serviceStatus,
-            paymentStatus,
-            page,
-            pageSize,
-        ]);
-
-
-    // =========================================================
-    // CARREGAMENTO AUTOMÁTICO
-    // =========================================================
-
-    useEffect(() => {
-        void loadWorkOrders();
-    }, [loadWorkOrders]);
 
 
     // =========================================================
@@ -467,37 +334,10 @@ export function WorkOrderTrackingPage() {
     // FORMATAÇÕES
     // =========================================================
 
-    function formatCurrency(
-        value: string
-    ) {
-
-        return new Intl.NumberFormat(
-            "pt-BR",
-            {
-                style: "currency",
-                currency: "BRL",
-            }
-        ).format(
-            Number(value)
-        );
-    }
 
 
-    function formatDate(
-        value: string
-    ) {
 
-        return new Intl.DateTimeFormat(
-            "pt-BR",
-            {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-            }
-        ).format(
-            new Date(value)
-        );
-    }
+
 
 
     // =========================================================
@@ -835,12 +675,6 @@ export function WorkOrderTrackingPage() {
                             />
 
 
-                            {/* MAIS FILTROS */}
-
-                            <FilterButton
-                                icon={Filter}
-                                label="Mais filtros"
-                            />
 
                         </div>
 
@@ -907,21 +741,7 @@ export function WorkOrderTrackingPage() {
                         ERRO
                     ================================================= */}
 
-                    {error && (
-                        <div
-                            className="
-                                mt-5
-                                rounded-2xl
-                                border border-red-500/20
-                                bg-red-500/5
-                                px-5 py-4
-                                text-sm
-                                text-red-400
-                            "
-                        >
-                            {error}
-                        </div>
-                    )}
+                    {error && <RequestError message={error} onRetry={loadWorkOrders} />}
 
 
                     {/* =================================================
@@ -946,8 +766,8 @@ export function WorkOrderTrackingPage() {
 
                                 <div
                                     className="
-                                        h-8
-                                        w-8
+                                        h-11
+                                        w-11
                                         animate-spin
                                         rounded-full
                                         border-2
@@ -1260,8 +1080,8 @@ export function WorkOrderTrackingPage() {
                                                                 }
                                                                 className="
                                                                     flex
-                                                                    h-8
-                                                                    w-8
+                                                                    h-11
+                                                                    w-11
                                                                     items-center
                                                                     justify-center
                                                                     rounded-lg
@@ -1381,8 +1201,8 @@ export function WorkOrderTrackingPage() {
                                                     }
                                                     className="
                                                         flex
-                                                        h-8
-                                                        w-8
+                                                        h-11
+                                                        w-11
                                                         shrink-0
                                                         items-center
                                                         justify-center
@@ -1539,6 +1359,7 @@ export function WorkOrderTrackingPage() {
                                 >
 
                                     <PaginationButton
+                                        label="Página anterior"
                                         disabled={
                                             page <= 1
                                         }
@@ -1602,6 +1423,7 @@ export function WorkOrderTrackingPage() {
 
 
                                     <PaginationButton
+                                        label="Próxima página"
                                         disabled={
                                             page >=
                                             totalPages
@@ -1637,7 +1459,7 @@ export function WorkOrderTrackingPage() {
                 workOrder={selectedWorkOrderForModal}
                 onClose={handleCloseActions}
                 onView={handleViewWorkOrder}
-                onUpdated={loadWorkOrders}
+                onUpdated={() => { if (page > 1 && workOrders.length === 1) setPage(page - 1); else loadWorkOrders(); }}
             />
 
             <WorkOrderDetailsModal
@@ -2505,11 +2327,13 @@ function StatusBadge({
 
 function PaginationButton({
     children,
+    label,
     active = false,
     disabled = false,
     onClick,
 }: {
     children: ReactNode;
+    label?: string;
     active?: boolean;
     disabled?: boolean;
     onClick?: () => void;
@@ -2518,12 +2342,14 @@ function PaginationButton({
     return (
         <button
             type="button"
+            aria-label={label}
+            aria-current={active ? "page" : undefined}
             disabled={disabled}
             onClick={onClick}
             className={`
                 flex
-                h-8
-                min-w-8
+                h-11
+                min-w-11
                 items-center
                 justify-center
                 rounded-lg
