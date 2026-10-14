@@ -26,7 +26,7 @@ export const sidebarMenu: SidebarMenuItem[] = [
   },
   {
     title: "Usuários",
-    path: "/users",
+    path: "/settings/users",
     icon: UserCog,
   },
   {

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   Hash,
@@ -29,6 +30,7 @@ const settingsSections = [
 ];
 
 export function WorkOrderSettings() {
+  const navigate = useNavigate();
   return (
     <section className="space-y-6">
       {/* =========================================================
@@ -107,6 +109,8 @@ export function WorkOrderSettings() {
               <button
                 type="button"
                 key={section.title}
+                disabled={section.title !== "Campos personalizados"}
+                onClick={() => navigate("/settings/custom-fields")}
                 className="
                   group
                   flex w-full items-center justify-between
@@ -143,7 +147,7 @@ export function WorkOrderSettings() {
                         text-[#f8fafc]
                       "
                     >
-                      {section.title}
+                      {section.title}{section.title !== "Campos personalizados" && <span className="ml-2 text-xs text-[#a7b4c8]">Em breve</span>}
                     </p>
 
                     <p

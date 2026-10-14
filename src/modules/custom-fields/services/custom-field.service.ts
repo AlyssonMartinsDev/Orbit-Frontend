@@ -20,12 +20,10 @@ export class CustomFieldService {
         module?: CustomFieldModule
     ): Promise<ApiResponse<CustomFieldDefinitionResponse[]>> {
 
-        const response = await api.get(
+        const response = await api.get<ApiResponse<CustomFieldDefinitionResponse[]>>(
             "/custom-fields",
             {
-                params: module
-                    ? { module }
-                    : undefined,
+                params: { active_only: false, ...(module ? { module } : {}) },
             }
         );
 
@@ -38,7 +36,7 @@ export class CustomFieldService {
         data: CreateCustomFieldRequest
     ): Promise<ApiResponse<CustomFieldDefinitionResponse>> {
 
-        const response = await api.post(
+        const response = await api.post<ApiResponse<CustomFieldDefinitionResponse>>(
             "/custom-fields",
             data
         );
@@ -53,7 +51,7 @@ export class CustomFieldService {
         data: UpdateCustomFieldRequest
     ): Promise<ApiResponse<CustomFieldDefinitionResponse>> {
 
-        const response = await api.put(
+        const response = await api.put<ApiResponse<CustomFieldDefinitionResponse>>(
             `/custom-fields/${customFieldId}`,
             data
         );
@@ -68,7 +66,7 @@ export class CustomFieldService {
         customFieldId: number
     ): Promise<ApiResponse<null>> {
 
-        const response = await api.delete(
+        const response = await api.delete<ApiResponse<null>>(
             `/custom-fields/${customFieldId}`
         );
 
@@ -81,8 +79,8 @@ export class CustomFieldService {
         workOrderId: number
     ): Promise<ApiResponse<WorkOrderCustomValueResponse[]>> {
 
-        const response = await api.get(
-            `/work-orders/${workOrderId}/custom-fields`
+        const response = await api.get<ApiResponse<WorkOrderCustomValueResponse[]>>(
+            `/custom-fields/${workOrderId}/custom-fields`
         );
 
         return response.data;
@@ -95,8 +93,8 @@ export class CustomFieldService {
         data: SaveWorkOrderCustomValuesRequest
     ): Promise<ApiResponse<WorkOrderCustomValueResponse[]>> {
 
-        const response = await api.put(
-            `/work-orders/${workOrderId}/custom-fields`,
+        const response = await api.put<ApiResponse<WorkOrderCustomValueResponse[]>>(
+            `/custom-fields/${workOrderId}/custom-fields`,
             data
         );
 

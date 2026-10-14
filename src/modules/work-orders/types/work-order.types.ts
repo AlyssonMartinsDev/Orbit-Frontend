@@ -22,7 +22,7 @@ export interface WorkOrderClientResponse {
     id: number;
     name: string;
     phone: string;
-    email: string;
+    email: string | null;
 }
 
 
@@ -50,7 +50,7 @@ export type PaymentStatus =
 
 export interface WorkOrderDataRequest {
     title: string;
-    description?: string;
+    description: string;
     status_service: WorkOrderStatus;
     status_payment: PaymentStatus;
     price: number;

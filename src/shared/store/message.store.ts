@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 
 type MessageType = "success" | "error" | "info" | "warning";
+let messageTimeout: ReturnType<typeof setTimeout> | undefined;
 
 interface MessageState {
     message: string | null,
@@ -18,13 +19,14 @@ export const useMessageStore = create<MessageState>((set) => ({
     isVisible: false,
 
     showMessage: (message, type = "info") => {
+        clearTimeout(messageTimeout);
         set({
             message,
             type,
             isVisible: true,
         });
 
-        setTimeout(() => {
+        messageTimeout = setTimeout(() => {
             set({
                 isVisible: false,
                 message: null,
@@ -33,9 +35,11 @@ export const useMessageStore = create<MessageState>((set) => ({
     },
 
     hideMessage: () => {
+        clearTimeout(messageTimeout);
         set({
             isVisible: false,
             message: null,
+            type: "info",
         });
     },
 }));

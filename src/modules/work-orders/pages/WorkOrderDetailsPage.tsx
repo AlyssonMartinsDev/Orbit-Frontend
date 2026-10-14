@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { formatCurrency, formatDateTime as formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
+import { formatPhone } from "../../../shared/utils/phone";
+import { useWorkOrder } from "../hooks/useWorkOrder";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -18,14 +21,10 @@ import {
     Wrench,
 } from "lucide-react";
 
-import { WorkOrderService } from "../services/work-order.service";
 
 import { Loading } from "../../../shared/components/loading";
 import { WhatsAppButton } from "../../../shared/buttons/WhatsAppButton";
 
-import type {
-    WorkOrderDetailsResponse,
-} from "../types/work-order.types";
 
 import type {
     CustomFieldDefinitionSimpleResponse,
@@ -47,58 +46,9 @@ export function WorkOrderDetailsPage() {
     // ESTADO
     // ========================================================
 
-    const [workOrder, setWorkOrder] =
-        useState<WorkOrderDetailsResponse | null>(
-            null
-        );
+    const { data: workOrder, isLoading, error, refresh } = useWorkOrder(id);
 
-    const [isLoading, setIsLoading] =
-        useState(true);
-
-
-    // ========================================================
-    // CARREGAMENTO
-    // ========================================================
-
-    useEffect(() => {
-
-        const loadWorkOrder = async () => {
-
-            if (!id) {
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-
-                setIsLoading(true);
-
-                const response =
-                    await WorkOrderService.getById(
-                        Number(id)
-                    );
-
-                if (
-                    !response.success ||
-                    !response.data
-                ) {
-                    return;
-                }
-
-                setWorkOrder(
-                    response.data
-                );
-
-            } finally {
-
-                setIsLoading(false);
-            }
-        };
-
-
-        void loadWorkOrder();
-
-    }, [id]);
+    if (error) return <RequestError message={error} onRetry={refresh} />;
 
 
     // ========================================================
@@ -194,34 +144,10 @@ export function WorkOrderDetailsPage() {
     // FORMATADORES
     // ========================================================
 
-    const formatCurrency = (
-        value: number
-    ) => {
-
-        return new Intl.NumberFormat(
-            "pt-BR",
-            {
-                style: "currency",
-                currency: "BRL",
-            }
-        ).format(value);
-    };
 
 
-    const formatDate = (
-        value: string
-    ) => {
 
-        return new Intl.DateTimeFormat(
-            "pt-BR",
-            {
-                dateStyle: "short",
-                timeStyle: "short",
-            }
-        ).format(
-            new Date(value)
-        );
-    };
+
 
 
     /*
@@ -231,69 +157,10 @@ export function WorkOrderDetailsPage() {
      * Adicionamos horário local para evitar que
      * o fuso altere o dia exibido.
      */
-    const formatCustomDate = (
-        value: string
-    ) => {
-
-        const date =
-            new Date(
-                `${value}T00:00:00`
-            );
-
-        if (
-            Number.isNaN(
-                date.getTime()
-            )
-        ) {
-            return value;
-        }
-
-        return new Intl.DateTimeFormat(
-            "pt-BR"
-        ).format(date);
-    };
 
 
-    const formatPhone = (
-        value: string
-    ) => {
-
-        const digits =
-            value.replace(/\D/g, "");
-
-        /*
-         * Caso algum valor tenha sido armazenado
-         * já com o código do Brasil.
-         */
-        const phone =
-            digits.length > 11 &&
-                digits.startsWith("55")
-
-                ? digits.slice(2)
-
-                : digits;
 
 
-        if (phone.length === 11) {
-
-            return phone.replace(
-                /(\d{2})(\d{5})(\d{4})/,
-                "($1) $2-$3"
-            );
-        }
-
-
-        if (phone.length === 10) {
-
-            return phone.replace(
-                /(\d{2})(\d{4})(\d{4})/,
-                "($1) $2-$3"
-            );
-        }
-
-
-        return value;
-    };
 
 
     // ========================================================

@@ -3,6 +3,7 @@ import {
     Users,
     ClipboardList,
     ShieldCheck,
+    SlidersHorizontal,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -29,6 +30,13 @@ const settingsItems = [
         description: "Preferências e campos",
         to: "/settings/work-orders",
         icon: ClipboardList,
+    },
+    {
+        label: "Campos personalizados",
+        mobileLabel: "Campos personalizados",
+        description: "Clientes e ordens de serviço",
+        to: "/settings/custom-fields",
+        icon: SlidersHorizontal,
     },
     {
         label: "Conta e segurança",

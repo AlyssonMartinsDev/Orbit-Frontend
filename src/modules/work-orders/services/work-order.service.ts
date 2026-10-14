@@ -14,7 +14,7 @@ import type {
 } from "../types/work-order.types"
 
 
-interface WorkOrderTrackingParams {
+export interface WorkOrderTrackingParams {
     // Paginação
     page?: number;
     page_size?: number;
@@ -39,7 +39,7 @@ export class WorkOrderService {
     ): Promise<ApiResponse<WorkOrderResponse>> {
 
         const response = await api.post<ApiResponse<WorkOrderResponse>>(
-            "/work_orders",
+            "/work_orders/",
             workOrderData
         );
 
@@ -50,10 +50,10 @@ export class WorkOrderService {
     }
 
     static async getById(
-        id: number
+        id: number, signal?: AbortSignal
     ): Promise<ApiResponse<WorkOrderDetailsResponse>> {
         const response = await api.get<ApiResponse<WorkOrderDetailsResponse>>(
-            `/work_orders/${id}`
+            `/work_orders/${id}`, { signal }
         );
 
         return response.data;
@@ -82,7 +82,7 @@ export class WorkOrderService {
     }
 
     static async getTracking(
-        params: WorkOrderTrackingParams = {}
+        params: WorkOrderTrackingParams = {}, signal?: AbortSignal
     ): Promise<ApiResponse<WorkOrderPaginatedResponse>> {
 
         const response = await api.get<
@@ -90,7 +90,7 @@ export class WorkOrderService {
         >(
             "/work_orders/tracking",
             {
-                params
+                params, signal
             }
         );
 

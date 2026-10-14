@@ -1,3 +1,5 @@
+import { serviceLabel, paymentLabel } from "../../work-orders/utils/status";
+import { formatCurrency } from "../../../shared/utils/format";
 import { useState } from "react";
 
 import {
@@ -32,12 +34,7 @@ export function WorkOrderTabs({
             ? openWorkOrders
             : finishedWorkOrders;
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        }).format(value);
-    };
+
 
     const getPaymentStyle = (status: string) => {
         switch (status) {
@@ -343,7 +340,7 @@ export function WorkOrderTabs({
                                                 sm:text-sm
                                             "
                                         >
-                                            {workOrder.status_service}
+                                            {serviceLabel(workOrder.status_service)}
                                         </p>
 
                                         <p
@@ -355,7 +352,7 @@ export function WorkOrderTabs({
                                             )}
                                             `}
                                         >
-                                            {workOrder.status_payment}
+                                            {paymentLabel(workOrder.status_payment)}
                                         </p>
                                     </div>
 

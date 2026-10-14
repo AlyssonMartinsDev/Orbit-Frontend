@@ -72,7 +72,7 @@ export function SettingsPage() {
                 {/* =================================================
                     CONTEÚDO
                 ================================================= */}
-                <main
+                <div
                     className="
                         min-w-0
                         w-full
@@ -86,7 +86,7 @@ export function SettingsPage() {
                     "
                 >
                     <Outlet />
-                </main>
+                </div>
             </div>
         </div>
     );

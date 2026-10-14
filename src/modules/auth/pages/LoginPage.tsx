@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -15,6 +16,7 @@ import { useMessageStore } from "../../../shared/store/message.store";
 
 
 export function LoginPage() {
+  const pending = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -42,14 +44,15 @@ export function LoginPage() {
     event: React.SubmitEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
+    if (pending.current) return;
+    pending.current = true;
 
     try {
       const res = await login({
-        email,
+        email: email.trim(),
         password,
       });
 
-      console.log("res da login", res);
 
       if (!res.success) {
         showMessage(
@@ -68,6 +71,7 @@ export function LoginPage() {
       navigate("/dashboard");
 
     } catch (error) {
+      if (axios.isCancel(error)) return;
       console.error(
         "Erro inesperado na aplicação:",
         error
@@ -77,6 +81,8 @@ export function LoginPage() {
         "Erro inesperado na aplicação.",
         "error"
       );
+    } finally {
+      pending.current = false;
     }
   };
 
@@ -85,7 +91,7 @@ export function LoginPage() {
     <main
       className="
         relative
-        min-h-screen
+        min-h-dvh
         overflow-hidden
         bg-[#010b1b]
         text-[#f8fafc]
@@ -142,7 +148,7 @@ export function LoginPage() {
           relative
           z-10
           grid
-          min-h-screen
+          min-h-dvh
           grid-cols-1
           lg:grid-cols-[1.05fr_0.95fr]
         "
@@ -426,7 +432,7 @@ export function LoginPage() {
         <section
           className="
             flex
-            min-h-screen
+            min-h-dvh
             items-center
             justify-center
             px-5
