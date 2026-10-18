@@ -9,7 +9,12 @@
     "lint": "eslint .",
     "test": "node --test tests/*.test.mjs",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:settings": "playwright test --config playwright.settings.config.mjs settings-integration.spec.mjs",
+    "test:pdf": "playwright test --config playwright.settings.config.mjs pdf-integration.spec.mjs",
+    "test:platform": "playwright test --config playwright.settings.config.mjs platform-integration.spec.mjs",
+    "test:quotes": "playwright test --config playwright.settings.config.mjs quotes-integration.spec.mjs",
+    "test:payments": "playwright test --config playwright.settings.config.mjs payments-integration.spec.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.1",

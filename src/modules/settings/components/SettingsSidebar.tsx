@@ -1,15 +1,24 @@
+import { useSettings } from "../hooks/settings-context";
 import {
     Building2,
     Users,
     ClipboardList,
     ShieldCheck,
     SlidersHorizontal,
+    ShieldPlus,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
 
 
 const settingsItems = [
+    {
+        label: "Administração da plataforma",
+        mobileLabel: "Plataforma",
+        description: "Novas organizações",
+        to: "/settings/platform",
+        icon: ShieldPlus,
+    },
     {
         label: "Organização",
         mobileLabel: "Organização",
@@ -49,6 +58,11 @@ const settingsItems = [
 
 
 export function SettingsSidebar() {
+    const { canReadTeam, profile } = useSettings();
+    const visibleItems = settingsItems.filter(item =>
+        (item.to !== "/settings/users" || canReadTeam) &&
+        (item.to !== "/settings/platform" || profile.is_superuser)
+    );
     return (
         <>
             {/* =====================================================
@@ -69,7 +83,7 @@ export function SettingsSidebar() {
                     [scrollbar-width:none]
                 "
             >
-                {settingsItems.map((item) => {
+                {visibleItems.map((item) => {
                     const Icon = item.icon;
 
                     return (
@@ -158,7 +172,7 @@ export function SettingsSidebar() {
 
                 {/* NAVEGAÇÃO */}
                 <nav className="flex flex-col gap-1">
-                    {settingsItems.map((item) => {
+                    {visibleItems.map((item) => {
                         const Icon = item.icon;
 
                         return (

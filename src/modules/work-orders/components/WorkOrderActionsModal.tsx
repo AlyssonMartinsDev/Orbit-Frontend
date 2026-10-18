@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2, CreditCard, Eye, Pencil, Trash2 } from "lucide-react";
 import { Modal } from "../../../shared/components/modal";
+import { PdfDownloadButton } from "../../../shared/components/PdfDownloadButton";
 import { getSession, isCurrentSession } from "../../../shared/services/session";
 import { useMessageStore } from "../../../shared/store/message.store";
 import { useDashboardStore } from "../../../shared/store/dashboard.store";
@@ -47,7 +48,7 @@ function Actions({
     const pending = useRef(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const showMessage = useMessageStore((state) => state.showMessage);
-    const runAction = async (action: "service" | "payment" | "delete") => {
+    const runAction = async (action: "service" | "delete") => {
         if (pending.current || !isCurrentSession(sessionId)) return;
         pending.current = true;
         setBusy(true);
@@ -57,9 +58,7 @@ function Actions({
                     ? await WorkOrderService.delete(workOrder.id)
                     : await WorkOrderService.update(
                           workOrder.id,
-                          action === "service"
-                              ? { status_service: "FINALIZADO" }
-                              : { status_payment: "PAGO" },
+                          { status_service: "FINALIZADO" },
                       );
             if (!isCurrentSession(sessionId)) return;
             if (!result.success) {
@@ -130,6 +129,11 @@ function Actions({
                     </>
                 ) : (
                     <>
+                        <PdfDownloadButton
+                            path={`/work_orders/${workOrder.id}/pdf`}
+                            filename={`ordem-de-servico-${workOrder.id}.pdf`}
+                            className={buttonClass}
+                        />
                         <button
                             type="button"
                             className={buttonClass}
@@ -166,14 +170,13 @@ function Actions({
                         <button
                             type="button"
                             className={buttonClass}
-                            disabled={
-                                workOrder.status_payment === "PAGO" ||
-                                workOrder.status_payment === "CANCELADO"
-                            }
-                            onClick={() => void runAction("payment")}
+                            onClick={() => {
+                                onClose();
+                                void navigate(`/work-orders/${workOrder.id}/details#recebimentos`);
+                            }}
                         >
                             <CreditCard size={18} />
-                            Marcar como pago
+                            Vincular pagamento
                         </button>
                         <button
                             type="button"

@@ -21,6 +21,8 @@ export const summary = {
 export const tracking = {
     items: [order], pagination: { page: 1, page_size: 20, total: 1, total_pages: 1 }, summary: { all: 1, pending: 1 },
 };
+export const profile = { id: 1, name: 'Admin teste', email: 'admin@example.com', role: 'admin', organization_id: 1, is_active: true, is_superuser: false, last_login_at: null, created_at: client.created_at, updated_at: client.updated_at };
+export const organization = { id: 1, name: 'Empresa teste', trade_name: null, document: null, phone: null, email: null, logo_url: null, address_line: null, city: null, state: null, zip_code: null, max_users: 5, created_at: client.created_at, updated_at: client.updated_at };
 export async function mockApi(page, handler) {
     await page.addInitScript(() => localStorage.setItem('orbit_token', 'ui-test-only'));
     await page.route('http://127.0.0.1:8000/**', async route => {
@@ -28,8 +30,12 @@ export async function mockApi(page, handler) {
         const path = new URL(req.url()).pathname;
         if (handler && await handler(route, path)) return;
         let data;
-        if (path === '/dashboard/summary') data = summary;
+        if (path === '/users/me') data = profile;
+        else if (path === '/users/') data = [profile];
+        else if (path === '/organizations/me') data = organization;
+        else if (path === '/dashboard/summary') data = summary;
         else if (path === '/work_orders/tracking') data = tracking;
+        else if (/\/work_orders\/\d+\/payments$/.test(path)) data = { total: '150.00', received: '0.00', balance: '150.00', status_payment: 'PENDENTE', review_required: false, can_register: true, can_cancel: true, payments: [] };
         else if (path === '/custom-fields') data = [field];
         else if (path.endsWith('/custom-fields')) data = [];
         else if (/\/clients\/1/.test(path)) data = { ...client, summary: { total_work_orders: 1, open_work_orders: 1, finished_work_orders: 0, total_services_value: 150 }, work_orders: [order] };

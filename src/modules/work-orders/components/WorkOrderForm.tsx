@@ -22,9 +22,8 @@ import type {
     CreateWorkOrderRequest,
     WorkOrderResponse,
     WorkOrderStatus,
-    PaymentStatus,
 } from "../types/work-order.types";
-import { serviceOptions, paymentOptions } from "../utils/status";
+import { serviceOptions } from "../utils/status";
 
 export function WorkOrderForm({
     mode = "create",
@@ -54,8 +53,6 @@ export function WorkOrderForm({
         price: workOrder?.price ?? "0",
         status_service:
             workOrder?.status_service ?? ("EM_ANDAMENTO" as WorkOrderStatus),
-        status_payment:
-            workOrder?.status_payment ?? ("PENDENTE" as PaymentStatus),
     }));
     const [customValues, setCustomValues] = useState<Record<number, string>>(
         () =>
@@ -428,35 +425,9 @@ export function WorkOrderForm({
                             ))}
                         </select>
                     </div>
-                    <div>
-                        <label
-                            htmlFor={`${formId}-payment`}
-                            className="mb-2 block text-sm text-[#a7b4c8]"
-                        >
-                            Status do pagamento
-                        </label>
-                        <select
-                            id={`${formId}-payment`}
-                            value={order.status_payment}
-                            onChange={(event) => {
-                                const value = paymentOptions.find(
-                                    (item) => item.value === event.target.value,
-                                )?.value;
-                                if (value)
-                                    setOrder((current) => ({
-                                        ...current,
-                                        status_payment: value,
-                                    }));
-                            }}
-                            className={inputClass}
-                        >
-                            {paymentOptions.map((item) => (
-                                <option key={item.value} value={item.value}>
-                                    {item.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <p className="text-sm leading-6 text-[#a7b4c8]">
+                        O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
+                    </p>
                     <div className="sm:col-span-2">
                         <label
                             htmlFor={`${formId}-price`}

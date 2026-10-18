@@ -132,7 +132,7 @@ export function DashboardPage() {
             icon: ClipboardCheck,
         },
         {
-            title: "Receita",
+            title: "Recebido no mês",
             value: formatCurrency(
                 summary?.financial.current_month_revenue ?? 0
             ),
@@ -445,6 +445,11 @@ export function DashboardPage() {
                     </div>
 
 
+                    {(summary?.financial.payment_reviews_pending ?? 0) > 0 && (
+                        <p role="status" className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">
+                            {summary?.financial.payment_reviews_pending} ordem(ns) com histórico financeiro a revisar. Seus saldos ainda não entram nas pendências. Confira a seção Recebimentos nos detalhes dessas ordens.
+                        </p>
+                    )}
                     <div className="mt-6 space-y-5">
                         {/* Pendentes */}
                         <div
