@@ -92,6 +92,18 @@ export const router = createBrowserRouter([
                         }),
                     },
                     {
+                        path: "/quotes",
+                        lazy: async () => ({ Component: (await import("../../modules/quotes/pages/QuotesPage")).QuotesPage }),
+                    },
+                    {
+                        path: "/quotes/create",
+                        lazy: async () => ({ Component: (await import("../../modules/quotes/pages/QuotesPage")).CreateQuotePage }),
+                    },
+                    {
+                        path: "/quotes/:id",
+                        lazy: async () => ({ Component: (await import("../../modules/quotes/pages/QuotesPage")).QuoteDetailsPage }),
+                    },
+                    {
                         path: "/work-orders/create",
                         lazy: async () => ({
                             Component: (
@@ -135,6 +147,14 @@ export const router = createBrowserRouter([
                             ).SettingsPage,
                         }),
                         children: [
+                            {
+                                path: "platform",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/settings/components/PlatformSettings")
+                                    ).PlatformSettings,
+                                }),
+                            },
                             {
                                 index: true,
                                 element: <Navigate to="organization" replace />,

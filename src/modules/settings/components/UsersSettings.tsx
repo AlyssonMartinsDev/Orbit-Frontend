@@ -1,373 +1,424 @@
+import { useCallback, useId, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Plus, Pencil, Users } from "lucide-react";
 import {
-    Search,
-    UserPlus,
-    Users,
-    ShieldCheck,
-    CircleCheck,
-    CircleX,
-    MoreVertical,
-} from "lucide-react";
-
-const mockUsers = [
-    {
-        id: 1,
-        name: "Alysson Martins",
-        email: "alysson@email.com",
-        role: "ADMIN",
-        active: true,
-    },
-    {
-        id: 2,
-        name: "Usuário Operacional",
-        email: "usuario@email.com",
-        role: "USER",
-        active: true,
-    },
-    {
-        id: 3,
-        name: "Usuário Inativo",
-        email: "inativo@email.com",
-        role: "USER",
-        active: false,
-    },
-];
+    inputClass,
+    primaryButtonClass,
+    secondaryButtonClass,
+} from "../../../shared/components/form/FormSection";
+import { Modal } from "../../../shared/components/modal";
+import { Loading } from "../../../shared/components/loading";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
+import { useAsyncResource } from "../../../shared/hooks/useAsyncResource";
+import { useMessageStore } from "../../../shared/store/message.store";
+import { useSettings } from "../hooks/settings-context";
+import { useSettingsMutation } from "../hooks/useSettingsMutation";
+import { SettingsService } from "../services/settings.service";
+import { roleLabels } from "../types/settings.types";
+import type { AccountUser, UserRole } from "../types/settings.types";
+import { SettingsField, SaveError } from "./SettingsField";
 
 export function UsersSettings() {
-    return (
-        <section className="min-w-0 space-y-6">
-            <p role="status" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">Em desenvolvimento. Os usuários e indicadores abaixo são exemplos fictícios; o gerenciamento ainda não está disponível.</p>
-            <fieldset disabled className="min-w-0 space-y-6 opacity-70">
-            {/* =========================================================
-          HEADER
-      ========================================================= */}
-            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
-                <div className="flex items-center gap-3">
-                    <div
-                        className="
-              flex h-10 w-10 items-center justify-center
-              rounded-xl
-              border border-[#2583ff]/15
-              bg-[#2583ff]/10
-              text-[#3692ff]
-              shadow-[0_0_20px_rgba(37,131,255,0.08)]
-            "
-                    >
-                        <Users size={20} strokeWidth={1.8} />
-                    </div>
-
-                    <div>
-                        <h2 className="text-lg font-semibold text-[#f8fafc]">
-                            Usuários
-                        </h2>
-
-                        <p className="mt-0.5 text-sm text-[#8290a8]">
-                            Gerencie os usuários vinculados à sua organização.
-                        </p>
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    className="
-            flex items-center gap-2
-            rounded-xl
-            border border-[#2583ff]/25
-            bg-[#2583ff]
-            px-4 py-2.5
-            text-sm font-medium
-            text-white
-            shadow-[0_0_22px_rgba(37,131,255,0.16)]
-            transition-all duration-200
-            hover:bg-[#3692ff]
-            hover:shadow-[0_0_28px_rgba(37,131,255,0.24)]
-          "
-                >
-                    <UserPlus size={17} strokeWidth={1.8} />
-                    Novo usuário
-                </button>
-            </div>
-
-            {/* =========================================================
-          SUMMARY
-      ========================================================= */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <div
-                    className="
-            rounded-2xl
-            border border-[#16345c]/35
-            bg-[#051020]/70
-            p-5
-          "
-                >
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                        Usuários ativos
-                    </p>
-
-                    <p className="mt-2 text-2xl font-semibold text-[#f8fafc]">
-                        2
-                    </p>
-
-                    <p className="mt-1 text-xs text-[#8290a8]">
-                        de 5 disponíveis
-                    </p>
-                </div>
-
-                <div
-                    className="
-            rounded-2xl
-            border border-[#16345c]/35
-            bg-[#051020]/70
-            p-5
-          "
-                >
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                        Administradores
-                    </p>
-
-                    <p className="mt-2 text-2xl font-semibold text-[#f8fafc]">
-                        1
-                    </p>
-
-                    <p className="mt-1 text-xs text-[#8290a8]">
-                        com acesso administrativo
-                    </p>
-                </div>
-
-                <div
-                    className="
-            rounded-2xl
-            border border-[#16345c]/35
-            bg-[#051020]/70
-            p-5
-          "
-                >
-                    <p className="text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                        Limite da organização
-                    </p>
-
-                    <p className="mt-2 text-2xl font-semibold text-[#f8fafc]">
-                        5
-                    </p>
-
-                    <p className="mt-1 text-xs text-[#8290a8]">
-                        usuários ativos
-                    </p>
-                </div>
-            </div>
-
-            {/* =========================================================
-          USERS CARD
-      ========================================================= */}
-            <div
-                className="
-          overflow-hidden
-          rounded-2xl
-          border border-[#16345c]/35
-          bg-[#051020]/70
-          shadow-[0_20px_50px_rgba(0,0,0,0.12)]
-        "
+    const { canReadTeam } = useSettings();
+    if (!canReadTeam)
+        return (
+            <p
+                role="status"
+                className="rounded-xl border border-[#16345c] p-5 text-sm text-[#a7b4c8]"
             >
-                {/* Toolbar */}
-                <div
-                    className="
-            flex flex-col gap-4
-            border-b border-[#16345c]/25
-            p-5
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-          "
+                A gestão da equipe está disponível para administradores e
+                gestores. Você pode editar seu perfil em{" "}
+                <Link
+                    to="/settings/account"
+                    className="text-blue-300 underline"
                 >
-                    <div>
-                        <h3 className="text-sm font-semibold text-[#f8fafc]">
-                            Usuários da organização
-                        </h3>
-
-                        <p className="mt-1 text-xs text-[#56657d]">
-                            Visualize e gerencie os acessos cadastrados.
-                        </p>
-                    </div>
-
-                    {/* Busca apenas visual */}
-                    <div className="relative w-full sm:w-72">
-                        <Search
-                            size={16}
-                            strokeWidth={1.8}
-                            className="
-                absolute left-3 top-1/2
-                -translate-y-1/2
-                text-[#56657d]
-              "
-                        />
-
-                        <input
-                            type="text"
-                            placeholder="Buscar usuário..."
-                            className="
-                w-full
-                rounded-xl
-                border border-[#16345c]/40
-                bg-[#010b1b]/55
-                py-2.5
-                pl-10
-                pr-4
-                text-sm
-                text-[#f8fafc]
-                outline-none
-                transition-all duration-200
-                placeholder:text-[#56657d]
-                focus:border-[#2583ff]/55
-                focus:shadow-[0_0_0_3px_rgba(37,131,255,0.08)]
-              "
-                        />
-                    </div>
+                    Conta e segurança
+                </Link>
+                .
+            </p>
+        );
+    return <Team />;
+}
+function Team() {
+    const { profile, isAdmin } = useSettings();
+    const load = useCallback(async (signal: AbortSignal) => {
+        const [users, organization] = await Promise.all([
+            SettingsService.users(signal),
+            SettingsService.organization(signal),
+        ]);
+        return { users, organization };
+    }, []);
+    const { data, error, refresh } = useAsyncResource("team", load);
+    const [selection, setSelection] = useState<AccountUser | "new" | null>(
+        null,
+    );
+    const [search, setSearch] = useState("");
+    const [filter, setFilter] = useState("all");
+    const visible = useMemo(
+        () =>
+            data?.users.filter(
+                (user) =>
+                    `${user.name} ${user.email}`
+                        .toLocaleLowerCase("pt-BR")
+                        .includes(search.trim().toLocaleLowerCase("pt-BR")) &&
+                    (filter === "all" ||
+                        (filter === "active"
+                            ? user.is_active
+                            : !user.is_active)),
+            ) ?? [],
+        [data, search, filter],
+    );
+    if (error) return <RequestError message={error} onRetry={refresh} />;
+    if (!data) return <Loading message="Carregando equipe…" />;
+    const active = data.users.filter((user) => user.is_active).length;
+    const limitReached =
+        data.organization.max_users !== null &&
+        active >= data.organization.max_users;
+    return (
+        <section className="min-w-0 space-y-5">
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 className="flex items-center gap-2 text-xl font-semibold">
+                        <Users size={22} />
+                        Usuários
+                    </h2>
+                    <p className="mt-2 text-sm text-[#a7b4c8]">
+                        {active} ativos
+                        {data.organization.max_users !== null
+                            ? ` de ${data.organization.max_users} disponíveis`
+                            : " • sem limite configurado"}
+                        .
+                    </p>
                 </div>
-
-                {/* =====================================================
-            TABLE
-        ===================================================== */}
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[700px]">
-                        <thead>
-                            <tr
-                                className="
-                  border-b border-[#16345c]/25
-                  bg-[#010b1b]/25
-                "
-                            >
-                                <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                                    Usuário
-                                </th>
-
-                                <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                                    Perfil
-                                </th>
-
-                                <th className="px-5 py-3.5 text-left text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                                    Status
-                                </th>
-
-                                <th className="px-5 py-3.5 text-right text-xs font-medium uppercase tracking-wide text-[#56657d]">
-                                    Ações
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {mockUsers.map((user) => (
-                                <tr
-                                    key={user.id}
-                                    className="
-                    border-b border-[#16345c]/20
-                    transition-colors duration-200
-                    last:border-b-0
-                    hover:bg-[#07182d]/45
-                  "
-                                >
-                                    {/* Usuário */}
-                                    <td className="px-5 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className="
-                          flex h-10 w-10 shrink-0
-                          items-center justify-center
-                          rounded-xl
-                          border border-[#16345c]/40
-                          bg-[#07182d]
-                          text-sm font-semibold
-                          text-[#3692ff]
-                        "
-                                            >
-                                                {user.name.charAt(0)}
-                                            </div>
-
-                                            <div>
-                                                <p className="text-sm font-medium text-[#f8fafc]">
-                                                    {user.name}
-                                                </p>
-
-                                                <p className="mt-0.5 text-xs text-[#56657d]">
-                                                    {user.email}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    {/* Role */}
-                                    <td className="px-5 py-4">
-                                        {user.role === "ADMIN" ? (
-                                            <span
-                                                className="
-                          inline-flex items-center gap-1.5
-                          rounded-lg
-                          border border-[#2583ff]/20
-                          bg-[#2583ff]/10
-                          px-2.5 py-1.5
-                          text-xs font-medium
-                          text-[#3692ff]
-                        "
-                                            >
-                                                <ShieldCheck size={14} strokeWidth={1.8} />
-                                                Administrador
-                                            </span>
-                                        ) : (
-                                            <span
-                                                className="
-                          inline-flex
-                          rounded-lg
-                          border border-[#16345c]/40
-                          bg-[#07182d]
-                          px-2.5 py-1.5
-                          text-xs font-medium
-                          text-[#8290a8]
-                        "
-                                            >
-                                                Usuário
-                                            </span>
-                                        )}
-                                    </td>
-
-                                    {/* Status */}
-                                    <td className="px-5 py-4">
-                                        {user.active ? (
-                                            <span className="inline-flex items-center gap-2 text-xs font-medium text-emerald-400">
-                                                <CircleCheck size={15} strokeWidth={1.8} />
-                                                Ativo
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-2 text-xs font-medium text-[#56657d]">
-                                                <CircleX size={15} strokeWidth={1.8} />
-                                                Inativo
-                                            </span>
-                                        )}
-                                    </td>
-
-                                    {/* Actions */}
-                                    <td className="px-5 py-4 text-right">
-                                        <button
-                                            type="button"
-                                            className="
-                        inline-flex h-9 w-9
-                        items-center justify-center
-                        rounded-lg
-                        border border-transparent
-                        text-[#56657d]
-                        transition-all duration-200
-                        hover:border-[#16345c]/40
-                        hover:bg-[#07182d]
-                        hover:text-[#f8fafc]
-                      "
-                                        >
-                                            <MoreVertical size={18} strokeWidth={1.8} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                {isAdmin && (
+                    <button
+                        type="button"
+                        disabled={limitReached}
+                        onClick={() => setSelection("new")}
+                        className={primaryButtonClass}
+                    >
+                        <Plus size={18} />
+                        Novo usuário
+                    </button>
+                )}
+            </header>
+            {limitReached && isAdmin && (
+                <p role="status" className="text-sm text-amber-200">
+                    Limite de usuários ativos atingido. Desative um usuário para
+                    liberar uma vaga.
+                </p>
+            )}
+            {!isAdmin && (
+                <p className="text-sm text-blue-200">
+                    Você pode consultar a equipe. Somente administradores podem
+                    gerenciar os acessos.
+                </p>
+            )}
+            <details className="rounded-xl border border-[#16345c] p-4 text-sm text-[#a7b4c8]">
+                <summary className="cursor-pointer py-1 font-medium text-white">
+                    O que cada perfil permite
+                </summary>
+                <ul className="mt-3 space-y-2">
+                    <li>
+                        <strong>Administrador:</strong> gerencia a organização,
+                        os usuários e a operação.
+                    </li>
+                    <li>
+                        <strong>Gestor:</strong> gerencia a operação e consulta
+                        a equipe, sem alterar acessos ou dados da empresa.
+                    </li>
+                    <li>
+                        <strong>Operacional:</strong> realiza atendimentos
+                        conforme as permissões dos módulos, sem gerenciar a
+                        equipe ou a organização.
+                    </li>
+                </ul>
+            </details>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <SettingsField
+                    label="Buscar usuários"
+                    type="search"
+                    placeholder="Nome ou e-mail"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                />
+                <label className="text-sm text-[#a7b4c8]">
+                    Situação
+                    <select
+                        className={`${inputClass} mt-2`}
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                    >
+                        <option value="all">Todos</option>
+                        <option value="active">Ativos</option>
+                        <option value="inactive">Inativos</option>
+                    </select>
+                </label>
             </div>
-        </fieldset>
+            <ul className="space-y-3">
+                {visible.map((user) => (
+                    <li
+                        key={user.id}
+                        className="flex min-w-0 flex-col gap-4 rounded-xl border border-[#16345c] bg-[#051020] p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <div className="min-w-0">
+                            <p className="break-words font-semibold">
+                                {user.name}
+                                {user.id === profile.id && (
+                                    <span className="ml-2 text-xs text-blue-300">
+                                        Você
+                                    </span>
+                                )}
+                            </p>
+                            <p className="mt-1 break-all text-sm text-[#a7b4c8]">
+                                {user.email}
+                            </p>
+                            <p className="mt-2 text-sm text-[#a7b4c8]">
+                                {roleLabels[user.role]} ·{" "}
+                                <span
+                                    className={
+                                        user.is_active
+                                            ? "text-green-300"
+                                            : "text-[#a7b4c8]"
+                                    }
+                                >
+                                    {user.is_active ? "Ativo" : "Inativo"}
+                                </span>
+                            </p>
+                        </div>
+                        {user.id === profile.id ? (
+                            <Link
+                                to="/settings/account"
+                                className={secondaryButtonClass}
+                            >
+                                Minha conta
+                            </Link>
+                        ) : (
+                            isAdmin &&
+                            !user.is_superuser && (
+                                <button
+                                    type="button"
+                                    aria-label={`Editar ${user.name}`}
+                                    onClick={() => setSelection(user)}
+                                    className={secondaryButtonClass}
+                                >
+                                    <Pencil size={17} />
+                                    Editar
+                                </button>
+                            )
+                        )}
+                    </li>
+                ))}
+            </ul>
+            {visible.length === 0 && (
+                <p role="status" className="py-6 text-sm text-[#a7b4c8]">
+                    Nenhum usuário encontrado.
+                </p>
+            )}
+            {selection !== null && (
+                <UserEditor
+                    key={selection === "new" ? "new" : selection.id}
+                    user={selection === "new" ? undefined : selection}
+                    onClose={() => setSelection(null)}
+                    onSaved={() => {
+                        setSelection(null);
+                        refresh();
+                    }}
+                />
+            )}
         </section>
+    );
+}
+function UserEditor({
+    user,
+    onClose,
+    onSaved,
+}: {
+    user?: AccountUser;
+    onClose: () => void;
+    onSaved: () => void;
+}) {
+    const id = useId();
+    const [name, setName] = useState(user?.name ?? "");
+    const [email, setEmail] = useState(user?.email ?? "");
+    const [role, setRole] = useState<UserRole>(
+        user?.role === "admin" || user?.role === "manager" ? user.role : "user",
+    );
+    const [active, setActive] = useState(user?.is_active ?? true);
+    const [password, setPassword] = useState("");
+    const [confirming, setConfirming] = useState(false);
+    const { busy, error, run, isPending } = useSettingsMutation();
+    const showMessage = useMessageStore((state) => state.showMessage);
+    const save = () =>
+        void run(
+            () =>
+                user
+                    ? SettingsService.updateUser(user.id, {
+                          name: name.trim(),
+                          email: email.trim(),
+                          role,
+                          is_active: active,
+                          ...(password ? { password } : {}),
+                      })
+                    : SettingsService.createUser({
+                          name: name.trim(),
+                          email: email.trim(),
+                          role,
+                          password,
+                      }),
+            () => {
+                showMessage(
+                    user
+                        ? "Usuário atualizado."
+                        : "Usuário criado. Compartilhe a senha inicial por um canal seguro.",
+                    "success",
+                );
+                onSaved();
+            },
+        );
+    return (
+        <Modal
+            open
+            title={user ? "Editar usuário" : "Novo usuário"}
+            subtitle={user?.name}
+            onClose={() => {
+                if (!isPending()) onClose();
+            }}
+        >
+            <form
+                className="space-y-4"
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    if (
+                        user &&
+                        (role !== user.role ||
+                            active !== user.is_active ||
+                            !!password) &&
+                        !confirming
+                    ) {
+                        setConfirming(true);
+                        return;
+                    }
+                    save();
+                }}
+                aria-busy={busy}
+            >
+                <fieldset disabled={busy} className="min-w-0 space-y-4">
+                    {confirming ? (
+                        <div className="rounded-xl border border-amber-400/40 p-4 text-sm leading-6 text-amber-100">
+                            <p>
+                                Confirmar a alteração de acesso de {user?.name}?
+                                As sessões deste usuário serão encerradas.
+                                {!active &&
+                                    " Ele não poderá entrar enquanto estiver inativo."}
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <SettingsField
+                                label="Nome"
+                                required
+                                maxLength={255}
+                                autoComplete="off"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                            <SettingsField
+                                label="E-mail"
+                                required
+                                type="email"
+                                maxLength={255}
+                                autoComplete="off"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            <div>
+                                <label
+                                    htmlFor={`${id}-role`}
+                                    className="mb-2 block text-sm text-[#a7b4c8]"
+                                >
+                                    Perfil de acesso
+                                </label>
+                                <select
+                                    id={`${id}-role`}
+                                    value={role}
+                                    onChange={(e) => {
+                                        if (
+                                            [
+                                                "admin",
+                                                "manager",
+                                                "user",
+                                            ].includes(e.target.value)
+                                        )
+                                            setRole(e.target.value as UserRole);
+                                    }}
+                                    className={inputClass}
+                                >
+                                    <option value="user">Operacional</option>
+                                    <option value="manager">Gestor</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <SettingsField
+                                label={
+                                    user ? "Redefinir senha" : "Senha inicial"
+                                }
+                                type="password"
+                                required={!user}
+                                minLength={8}
+                                maxLength={72}
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <p className="text-xs leading-5 text-[#a7b4c8]">
+                                {user
+                                    ? "Deixe a senha em branco para mantê-la. "
+                                    : "Compartilhe a senha inicial com o usuário. "}
+                                Use pelo menos 8 caracteres.
+                            </p>
+                            {user && (
+                                <label className="flex min-h-11 items-center gap-3 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={active}
+                                        onChange={(e) =>
+                                            setActive(e.target.checked)
+                                        }
+                                        className="h-5 w-5 accent-blue-500"
+                                    />
+                                    Usuário ativo
+                                </label>
+                            )}
+                        </>
+                    )}
+                    <SaveError message={error} />
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            onClick={() =>
+                                confirming ? setConfirming(false) : onClose()
+                            }
+                            className={secondaryButtonClass}
+                        >
+                            {confirming ? "Voltar" : "Cancelar"}
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={busy || !name.trim()}
+                            className={primaryButtonClass}
+                        >
+                            {busy
+                                ? "Salvando…"
+                                : confirming
+                                  ? "Confirmar alteração"
+                                  : user
+                                    ? "Salvar usuário"
+                                    : "Criar usuário"}
+                        </button>
+                    </div>
+                </fieldset>
+            </form>
+        </Modal>
     );
 }

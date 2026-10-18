@@ -1,5 +1,6 @@
 import {
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Settings,
   UserCog,
@@ -23,6 +24,11 @@ export const sidebarMenu: SidebarMenuItem[] = [
     title: "Ordens de Serviço",
     path: "/work-orders",
     icon: ClipboardList,
+  },
+  {
+    title: "Orçamentos",
+    path: "/quotes",
+    icon: FileText,
   },
   {
     title: "Usuários",

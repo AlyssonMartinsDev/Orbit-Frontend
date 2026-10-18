@@ -52,7 +52,6 @@ export interface WorkOrderDataRequest {
     title: string;
     description: string;
     status_service: WorkOrderStatus;
-    status_payment: PaymentStatus;
     price: number;
 }
 
@@ -152,6 +151,7 @@ export interface UpdateWorkOrderRequest {
 
 export interface WorkOrderResponse {
     id: number;
+    source_quote_id?: number | null;
 
     client:
     WorkOrderClientResponse;
@@ -184,34 +184,7 @@ export interface WorkOrderResponse {
 // DETAILS
 // ============================================================
 
-export interface WorkOrderDetailsResponse {
-    id: number;
-
-    client:
-    WorkOrderClientResponse;
-
-    user_id: number;
-
-    title: string;
-    description: string;
-
-    status_service:
-    WorkOrderStatus;
-
-    status_payment:
-    PaymentStatus;
-
-    custom_values:
-    WorkOrderCustomValue[];
-
-    price: string;
-
-    finished_at:
-    string | null;
-
-    created_at: string;
-    updated_at: string;
-}
+export type WorkOrderDetailsResponse = WorkOrderResponse;
 
 
 // ============================================================

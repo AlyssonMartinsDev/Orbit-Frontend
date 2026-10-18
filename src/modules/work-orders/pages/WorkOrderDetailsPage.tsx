@@ -2,7 +2,9 @@ import { formatCurrency, formatDateTime as formatDate, formatDate as formatCusto
 import { formatPhone } from "../../../shared/utils/phone";
 import { useWorkOrder } from "../hooks/useWorkOrder";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { PdfDownloadButton } from "../../../shared/components/PdfDownloadButton";
+import { WorkOrderPayments } from "../components/WorkOrderPayments";
 
 import {
     ArrowLeft,
@@ -736,6 +738,17 @@ export function WorkOrderDetailsPage() {
                     Visualize todas as informações vinculadas a esta ordem de serviço.
                 </p>
 
+                <div className="mt-5">
+                    {workOrder.source_quote_id && (
+                        <Link className="mb-4 block text-sm text-blue-300 underline" to={`/quotes/${workOrder.source_quote_id}`}>
+                            Ver orçamento de origem #{workOrder.source_quote_id}
+                        </Link>
+                    )}
+                    <PdfDownloadButton
+                        path={`/work_orders/${workOrder.id}/pdf`}
+                        filename={`ordem-de-servico-${workOrder.id}.pdf`}
+                    />
+                </div>
             </header>
 
 
@@ -1207,6 +1220,8 @@ export function WorkOrderDetailsPage() {
 
             </section>
 
+
+            <WorkOrderPayments key={workOrder.id} orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={refresh} />
 
             {/* =================================================
                 DADOS COMPLEMENTARES

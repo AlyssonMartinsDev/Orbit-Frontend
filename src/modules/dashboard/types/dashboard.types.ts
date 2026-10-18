@@ -19,9 +19,10 @@ export interface DashboardCards {
  * =========================== */
 
 export interface DashboardFinancial {
-  current_month_revenue: number;
-  pending_payments: number;
-  average_ticket: number;
+  payment_reviews_pending?: number;
+  current_month_revenue: number | string;
+  pending_payments: number | string;
+  average_ticket: number | string;
   completion_rate: number;
 }
 

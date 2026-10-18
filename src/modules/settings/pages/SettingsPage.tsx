@@ -1,11 +1,32 @@
+import { SettingsContext } from "../hooks/settings-context";
+import { SettingsService } from "../services/settings.service";
+import { useAsyncResource } from "../../../shared/hooks/useAsyncResource";
+import { RequestError } from "../../../shared/components/feedback/RequestError";
+import { Loading } from "../../../shared/components/loading";
 import { Outlet } from "react-router-dom";
 
 import { SettingsSidebar } from "../components/SettingsSidebar";
 
 export function SettingsPage() {
+    const {
+        data: profile,
+        error,
+        refresh,
+    } = useAsyncResource("current-profile", SettingsService.profile);
+    if (error) return <RequestError message={error} onRetry={refresh} />;
+    if (!profile) return <Loading message="Carregando configurações…" />;
+    const isAdmin = profile.is_superuser || profile.role === "admin";
     return (
-        <div
-            className="
+        <SettingsContext.Provider
+            value={{
+                profile,
+                refreshProfile: refresh,
+                isAdmin,
+                canReadTeam: isAdmin || profile.role === "manager",
+            }}
+        >
+            <div
+                className="
                 flex
                 min-h-full
                 flex-col
@@ -20,13 +41,13 @@ export function SettingsPage() {
 
                 sm:p-6
             "
-        >
-            {/* =====================================================
+            >
+                {/* =====================================================
                 HEADER
             ===================================================== */}
-            <header className="mb-6 sm:mb-7">
-                <h1
-                    className="
+                <header className="mb-6 sm:mb-7">
+                    <h1
+                        className="
                         text-2xl
                         font-semibold
                         tracking-tight
@@ -34,29 +55,28 @@ export function SettingsPage() {
 
                         sm:text-3xl
                     "
-                >
-                    Configurações
-                </h1>
+                    >
+                        Configurações
+                    </h1>
 
-                <p
-                    className="
+                    <p
+                        className="
                         mt-1
                         max-w-2xl
                         text-sm
                         leading-6
                         text-[#8290a8]
                     "
-                >
-                    Gerencie sua organização e preferências do Orbit.
-                </p>
-            </header>
+                    >
+                        Gerencie sua organização e preferências do Orbit.
+                    </p>
+                </header>
 
-
-            {/* =====================================================
+                {/* =====================================================
                 LAYOUT INTERNO
             ===================================================== */}
-            <div
-                className="
+                <div
+                    className="
                     flex
                     min-h-0
                     flex-1
@@ -64,16 +84,15 @@ export function SettingsPage() {
 
                     lg:flex-row
                 "
-            >
-                {/* Navegação das configurações */}
-                <SettingsSidebar />
+                >
+                    {/* Navegação das configurações */}
+                    <SettingsSidebar />
 
-
-                {/* =================================================
+                    {/* =================================================
                     CONTEÚDO
                 ================================================= */}
-                <div
-                    className="
+                    <div
+                        className="
                         min-w-0
                         w-full
                         flex-1
@@ -84,10 +103,11 @@ export function SettingsPage() {
                         lg:pl-8
                         lg:pt-0
                     "
-                >
-                    <Outlet />
+                    >
+                        <Outlet />
+                    </div>
                 </div>
             </div>
-        </div>
+        </SettingsContext.Provider>
     );
 }
