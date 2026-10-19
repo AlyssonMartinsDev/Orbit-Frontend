@@ -13,6 +13,8 @@
     "test:settings": "playwright test --config playwright.settings.config.mjs settings-integration.spec.mjs",
     "test:pdf": "playwright test --config playwright.settings.config.mjs pdf-integration.spec.mjs",
     "test:platform": "playwright test --config playwright.settings.config.mjs platform-integration.spec.mjs",
+    "test:items": "playwright test --config playwright.settings.config.mjs items-integration.spec.mjs",
+    "test:followups": "playwright test --config playwright.settings.config.mjs followups-integration.spec.mjs",
     "test:quotes": "playwright test --config playwright.settings.config.mjs quotes-integration.spec.mjs",
     "test:payments": "playwright test --config playwright.settings.config.mjs payments-integration.spec.mjs"
   },

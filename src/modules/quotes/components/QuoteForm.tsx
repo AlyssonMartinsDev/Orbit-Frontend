@@ -1,3 +1,5 @@
+import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
+import { itemsTotal } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useClientStore } from "../../../shared/store/client.store";
@@ -9,7 +11,7 @@ import { QuoteService, type Quote, type QuoteData } from "../services/quote.serv
 
 export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved: (quote: Quote) => void; onCancel?: () => void }) {
   const clientFieldId = useId();
-  const [data, setData] = useState<QuoteData>(() => ({ client_id: quote?.client_id ?? 0, title: quote?.title ?? "", description: quote?.description ?? "", price: quote?.price ?? "", valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
+  const [data, setData] = useState<QuoteData>(() => ({ pricing_mode: quote?.pricing_mode ?? "SIMPLE", items: quote?.items ?? [], client_id: quote?.client_id ?? 0, title: quote?.title ?? "", description: quote?.description ?? "", price: quote?.price ?? "", valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
   const { clients, isLoaded, isLoading, error: clientError, loadClients } = useClientStore();
   const { busy, error, run } = useSettingsMutation();
   const request = useRef<{ fingerprint: string; id: string } | null>(null);
@@ -18,10 +20,13 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
   return <form aria-label={quote ? "Editar orçamento" : "Novo orçamento"} className="space-y-5" onSubmit={event => {
     event.preventDefault();
     if (!isLoaded || !data.client_id) return;
-    const fingerprint = JSON.stringify(data);
+    const price = data.pricing_mode === "ITEMIZED" ? itemsTotal(data.items ?? []) : data.price;
+    if (price === null) return;
+    const payload = { ...data, price, items: data.pricing_mode === "ITEMIZED" ? data.items : [] };
+    const fingerprint = JSON.stringify(payload);
     if (request.current?.fingerprint !== fingerprint) request.current = { fingerprint, id: crypto.randomUUID() };
     const requestId = request.current.id;
-    void run(() => quote ? QuoteService.update(quote.id, { ...data, version: quote.version }) : QuoteService.create({ ...data, request_id: requestId }), onSaved);
+    void run(() => quote ? QuoteService.update(quote.id, { ...payload, version: quote.version }) : QuoteService.create({ ...payload, request_id: requestId }), onSaved);
   }}>
     <SaveError message={error} />
     {clientError && <RequestError message={clientError} onRetry={() => void loadClients(true)} />}
@@ -40,8 +45,9 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
       <label className="block text-sm text-[#a7b4c8]">Descrição do serviço *
         <textarea required maxLength={20000} rows={5} className={`${inputClass} mt-2 resize-y`} value={data.description} onChange={e => field("description", e.target.value)} />
       </label>
+      <PricingEditor mode={data.pricing_mode ?? "SIMPLE"} items={data.items ?? []} price={data.price} priceLabel="Valor do orçamento (R$)" onChange={value => setData(current => ({ ...current, ...value }))} />
       <div className="grid gap-5 sm:grid-cols-2">
-        <SettingsField label="Valor do orçamento (R$)" type="number" inputMode="decimal" required min="0" max="99999999.99" step="0.01" value={data.price} onChange={e => field("price", e.target.value)} />
+
         <SettingsField label="Válido até" type="date" value={data.valid_until ?? ""} onChange={e => field("valid_until", e.target.value || null)} />
       </div>
       <label className="block text-sm text-[#a7b4c8]">Condições e observações

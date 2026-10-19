@@ -1,3 +1,4 @@
+import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
 import { api } from "../../../shared/services/api";
 import { requireResponseData, type ApiResponse } from "../../../shared/types/api.types";
 
@@ -7,6 +8,8 @@ export const quoteStatuses = {
 } as const;
 export type QuoteStatus = keyof typeof quoteStatuses;
 export interface QuoteData {
+  pricing_mode?: PricingMode;
+  items?: LineItem[];
   client_id: number;
   title: string;
   description: string;

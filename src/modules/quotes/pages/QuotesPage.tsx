@@ -1,3 +1,4 @@
+import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { useCallback, useId, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAsyncResource } from "../../../shared/hooks/useAsyncResource";
@@ -94,6 +95,7 @@ function QuoteDetails({ quote, refresh }: { quote: Quote; refresh: () => void })
         <div><dt className="text-sm text-[#a7b4c8]">Criado em</dt><dd className="mt-2">{formatDate(quote.created_at)}</dd></div>
       </dl>
       {quote.expired && <p className="text-sm text-amber-200">Validade vencida. Atualize a proposta antes de registrar a aprovação.</p>}
+      <ItemsSummary items={quote.items ?? []} />
       <div><h2 className="font-semibold">Descrição do serviço</h2><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#a7b4c8]">{quote.description}</p></div>
       {quote.terms && <div><h2 className="font-semibold">Condições e observações</h2><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#a7b4c8]">{quote.terms}</p></div>}
       {quote.work_order_id && <Link className={primaryButtonClass} to={`/work-orders/${quote.work_order_id}/details`}>Abrir ordem de serviço #{quote.work_order_id}</Link>}

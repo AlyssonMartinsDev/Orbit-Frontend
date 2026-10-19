@@ -1,3 +1,5 @@
+import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
+import { itemsTotal, type LineItem, type PricingMode } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -51,6 +53,8 @@ export function WorkOrderForm({
         title: workOrder?.title ?? "",
         description: workOrder?.description ?? "",
         price: workOrder?.price ?? "0",
+        pricing_mode: workOrder?.pricing_mode ?? ("SIMPLE" as PricingMode),
+        items: workOrder?.items ?? ([] as LineItem[]),
         status_service:
             workOrder?.status_service ?? ("EM_ANDAMENTO" as WorkOrderStatus),
     }));
@@ -93,12 +97,14 @@ export function WorkOrderForm({
         event.preventDefault();
         if (submitting.current || !ready || !isCurrentSession(sessionId))
             return;
-        const price = Number(order.price);
+        const computed = order.pricing_mode === "ITEMIZED" ? itemsTotal(order.items) : order.price;
+        const price = computed ?? "";
         if (
             !order.title.trim() ||
-            !Number.isFinite(price) ||
-            price < 0 ||
-            order.price.trim() === ""
+            !Number.isFinite(Number(price)) ||
+            Number(price) < 0 ||
+            price.trim() === "" ||
+            (order.pricing_mode === "ITEMIZED" && order.items.some(item => !item.description.trim()))
         ) {
             showMessage(
                 "Preencha o título e um valor válido para o serviço.",
@@ -126,6 +132,8 @@ export function WorkOrderForm({
             title: order.title.trim(),
             description: order.description.trim(),
             price,
+            items: order.pricing_mode === "ITEMIZED" ? order.items : [],
+            ...(mode === "edit" ? { pricing_version: workOrder?.pricing_version ?? 0 } : {}),
         };
         const payload: CreateWorkOrderRequest = {
             client:
@@ -428,30 +436,7 @@ export function WorkOrderForm({
                     <p className="text-sm leading-6 text-[#a7b4c8]">
                         O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
                     </p>
-                    <div className="sm:col-span-2">
-                        <label
-                            htmlFor={`${formId}-price`}
-                            className="mb-2 block text-sm text-[#a7b4c8]"
-                        >
-                            Valor (R$) *
-                        </label>
-                        <input
-                            id={`${formId}-price`}
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="0.01"
-                            required
-                            value={order.price}
-                            onChange={(event) =>
-                                setOrder((current) => ({
-                                    ...current,
-                                    price: event.target.value,
-                                }))
-                            }
-                            className={inputClass}
-                        />
-                    </div>
+                    <div className="sm:col-span-2"><PricingEditor mode={order.pricing_mode} items={order.items} price={order.price} priceLabel="Valor (R$)" onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
                     <div className="sm:col-span-2">
                         <label
                             htmlFor={`${formId}-description`}

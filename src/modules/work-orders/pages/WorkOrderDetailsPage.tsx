@@ -1,9 +1,11 @@
+import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { formatCurrency, formatDateTime as formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
 import { formatPhone } from "../../../shared/utils/phone";
 import { useWorkOrder } from "../hooks/useWorkOrder";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PdfDownloadButton } from "../../../shared/components/PdfDownloadButton";
+import { FollowupPanel } from "../../followups/components/FollowupPanel";
 import { WorkOrderPayments } from "../components/WorkOrderPayments";
 
 import {
@@ -1221,6 +1223,8 @@ export function WorkOrderDetailsPage() {
             </section>
 
 
+            <ItemsSummary items={workOrder.items ?? []} />
+            <FollowupPanel key={`followup:${workOrder.id}:${workOrder.status_service}`} orderId={workOrder.id} />
             <WorkOrderPayments key={workOrder.id} orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={refresh} />
 
             {/* =================================================
