@@ -1,3 +1,4 @@
+import type { Address, AddressInput } from "../../addresses/types/address.types";
 export type UserRole = "admin" | "manager" | "user";
 export interface AccountUser {
   id: number;
@@ -12,17 +13,19 @@ export interface AccountUser {
   updated_at: string;
 }
 export interface OrganizationData {
+  address?: AddressInput | null;
   name: string;
   trade_name: string | null;
   document: string | null;
   phone: string | null;
   email: string | null;
-  address_line: string | null;
-  city: string | null;
-  state: string | null;
-  zip_code: string | null;
+  address_line?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
 }
 export interface Organization extends OrganizationData {
+  address?: Address | null;
   id: number;
   logo_url: string | null;
   max_users: number | null;

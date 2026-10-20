@@ -1,3 +1,4 @@
+import { appliesTo } from "../../modules/custom-fields/types/custom-field.types";
 import axios from "axios";
 import { create } from "zustand";
 import { getSession, isCurrentSession } from "../services/session";
@@ -65,7 +66,7 @@ export const useCustomFieldStore = create<CustomFieldState>((set, get) => ({
     },
     getCustomFieldsByModule: (module, activeOnly = true) =>
         get().customFields.filter(
-            (field) => field.module === module && (!activeOnly || field.active),
+            (field) => appliesTo(field.module, module) && (!activeOnly || field.active),
         ),
     addCustomField: (field) => {
         version++;

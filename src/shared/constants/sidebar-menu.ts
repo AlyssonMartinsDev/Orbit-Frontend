@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -24,6 +25,11 @@ export const sidebarMenu: SidebarMenuItem[] = [
     title: "Ordens de Serviço",
     path: "/work-orders",
     icon: ClipboardList,
+  },
+  {
+    title: "Prazos e acompanhamentos",
+    path: "/followups",
+    icon: CalendarClock,
   },
   {
     title: "Orçamentos",

@@ -1,3 +1,4 @@
+import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
 import type {
     CustomFieldModule,
     CustomFieldPresetType,
@@ -49,10 +50,12 @@ export type PaymentStatus =
 // ============================================================
 
 export interface WorkOrderDataRequest {
+    pricing_mode?: PricingMode;
+    items?: LineItem[];
     title: string;
     description: string;
     status_service: WorkOrderStatus;
-    price: number;
+    price: number | string;
 }
 
 
@@ -99,6 +102,7 @@ export interface WorkOrderFieldDefinition {
     CustomFieldPresetType | null;
 
     required: boolean;
+    required_quote: boolean;
     display_order: number;
     placeholder: string | null;
 }
@@ -137,11 +141,15 @@ export interface CreateWorkOrderRequest {
 // ============================================================
 
 export interface UpdateWorkOrderRequest {
+    custom_values?: WorkOrderCustomValuesRequest;
+    pricing_mode?: PricingMode;
+    items?: LineItem[];
+    pricing_version?: number;
     title?: string;
     description?: string;
     status_service?: WorkOrderStatus;
     status_payment?: PaymentStatus;
-    price?: number;
+    price?: number | string;
 }
 
 
@@ -150,6 +158,9 @@ export interface UpdateWorkOrderRequest {
 // ============================================================
 
 export interface WorkOrderResponse {
+    pricing_mode?: PricingMode;
+    items?: LineItem[];
+    pricing_version?: number;
     id: number;
     source_quote_id?: number | null;
 

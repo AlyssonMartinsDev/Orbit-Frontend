@@ -1,0 +1,105 @@
+import { expect, test } from '@playwright/test';
+const API = 'http://127.0.0.1:8002';
+async function setup(page, request) {
+    const login = await request.post(`${API}/auth/login`, { data: { email: 'admin@example.com', password: 'Orbit-test-123' } });
+    const token = (await login.json()).data.access_token;
+    const headers = { Authorization: `Bearer ${token}` };
+    const client = await request.post(`${API}/clients/`, { headers, data: { name: 'Cliente itens', phone: '11988887777' } });
+    const clientId = (await client.json()).data.id;
+    await page.addInitScript(value => localStorage.setItem('orbit_token', value), token);
+    return { headers, clientId };
+}
+async function fillItems(page) {
+    await page.getByRole('radio', { name: 'Detalhar itens', exact: true }).check();
+    await page.getByLabel('Descrição do item 1', { exact: true }).fill('Mão de obra');
+    await page.getByLabel('Quantidade do item 1', { exact: true }).fill('1.5');
+    await page.getByLabel('Valor unitário do item 1 (R$)', { exact: true }).fill('100.01');
+    await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+    await page.getByLabel('Descrição do item 2', { exact: true }).fill('Peça de reposição');
+    await page.getByLabel('Quantidade do item 2', { exact: true }).fill('2');
+    await page.getByLabel('Valor unitário do item 2 (R$)', { exact: true }).fill('9.99');
+    await expect(page.getByText(/R\$\s*170,00/, { exact: true })).toBeVisible();
+}
+test.beforeEach(async ({ request }) => { expect((await request.post(`${API}/__test__/reset`)).ok()).toBe(true); });
+for (const width of [320, 1440]) {
+    test(`OS com itens, edição e retorno ao valor único em ${width}px`, async ({ page, request }, info) => {
+        await page.setViewportSize({ width, height: 900 });
+        const { headers, clientId } = await setup(page, request);
+        await page.goto('/work-orders/create');
+        await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
+        await page.getByLabel('Título *', { exact: true }).fill('Revisão de motor');
+        await page.getByLabel('Descrição do serviço', { exact: true }).fill('Descrição livre mantida');
+        await expect(page.getByRole('radio', { name: 'Valor único', exact: true })).toBeChecked();
+        await fillItems(page);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.screenshot({ path: info.outputPath('itens-formulario.png'), fullPage: true });
+        await page.getByRole('button', { name: 'Salvar ordem', exact: true }).click();
+        await expect(page).toHaveURL(/\/dashboard$/);
+        const orders = (await (await request.get(`${API}/work_orders/`, { headers })).json()).data;
+        expect(orders).toHaveLength(1);
+        const id = orders[0].id;
+        expect(orders[0].price).toBe('170.00');
+        expect(orders[0].items).toHaveLength(2);
+        await page.goto(`/work-orders/${id}/details`);
+        await expect(page.getByRole('region', { name: 'Itens do serviço' })).toContainText('Mão de obra');
+        const download = page.waitForEvent('download');
+        await page.getByRole('button', { name: 'Exportar PDF', exact: true }).click();
+        expect((await download).suggestedFilename()).toBe(`ordem-de-servico-${id}.pdf`);
+        await page.goto(`/work-orders/${id}/edit`);
+        await expect(page.getByRole('radio', { name: 'Detalhar itens', exact: true })).toBeChecked();
+        await page.getByRole('button', { name: 'Remover item 2', exact: true }).click();
+        await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
+        await expect(page).toHaveURL(/\/dashboard$/);
+        await page.goto(`/work-orders/${id}/edit`);
+        await page.getByRole('radio', { name: 'Valor único', exact: true }).check();
+        await expect(page.getByLabel('Valor (R$)', { exact: false })).toHaveValue('150.02');
+        await page.getByLabel('Valor (R$)', { exact: false }).fill('180');
+        await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
+        await expect(page).toHaveURL(/\/dashboard$/);
+        const saved = (await (await request.get(`${API}/work_orders/${id}`, { headers })).json()).data;
+        expect(saved.items).toEqual([]);
+        expect(saved.pricing_mode).toBe('SIMPLE');
+        expect(saved.price).toBe('180.00');
+        expect(saved.description).toBe('Descrição livre mantida');
+    });
+}
+test('orçamento com itens preserva detalhamento na conversão', async ({ page, request }) => {
+    const { headers, clientId } = await setup(page, request);
+    await page.goto('/quotes/create');
+    await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
+    await page.getByLabel('Título do orçamento', { exact: false }).fill('Revisão completa');
+    await page.getByLabel('Descrição do serviço', { exact: false }).fill('Serviço livre com detalhamento opcional');
+    await fillItems(page);
+    await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
+    await expect(page).toHaveURL(/\/quotes\/\d+$/);
+    const id = Number(page.url().split('/').pop());
+    await expect(page.getByRole('region', { name: 'Itens do serviço' })).toContainText('Peça de reposição');
+    await page.getByRole('button', { name: 'Editar orçamento', exact: true }).click();
+    await expect(page.getByRole('radio', { name: 'Detalhar itens', exact: true })).toBeChecked();
+    await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
+    await page.getByRole('button', { name: 'Registrar aprovação', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirmar alteração', exact: true }).click();
+    await page.getByRole('button', { name: 'Gerar ordem de serviço', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirmar e gerar OS', exact: true }).click();
+    await expect(page).toHaveURL(/\/work-orders\/\d+\/details$/);
+    await expect(page.getByRole('region', { name: 'Itens do serviço' })).toContainText('Mão de obra');
+    const quote = (await (await request.get(`${API}/quotes/${id}`, { headers })).json()).data;
+    const order = (await (await request.get(`${API}/work_orders/${quote.work_order_id}`, { headers })).json()).data;
+    expect(order.items).toEqual(quote.items);
+    expect(order.price).toBe('170.00');
+});
+test('OS com pagamento impede redução do total pelos itens', async ({ page, request }) => {
+    const { headers, clientId } = await setup(page, request);
+    const response = await request.post(`${API}/work_orders/`, { headers, data: { client: { id: clientId }, work_order: { title: 'Proteção financeira', description: 'Serviço', pricing_mode: 'ITEMIZED', items: [{ description: 'Revisão', quantity: '1', unit_price: '100' }] } } });
+    expect(response.ok()).toBe(true);
+    const id = (await response.json()).data.id;
+    expect((await request.post(`${API}/work_orders/${id}/payments`, { headers, data: { amount: '80', received_on: '2025-01-01', method: 'PIX', request_id: crypto.randomUUID() } })).ok()).toBe(true);
+    await page.goto(`/work-orders/${id}/edit`);
+    await page.getByLabel('Valor unitário do item 1 (R$)', { exact: true }).fill('50');
+    await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
+    await expect(page.getByText(/O valor da ordem não pode ser menor que o total recebido/)).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/work-orders/${id}/edit$`));
+    const saved = (await (await request.get(`${API}/work_orders/${id}`, { headers })).json()).data;
+    expect(saved.price).toBe('100.00');
+});

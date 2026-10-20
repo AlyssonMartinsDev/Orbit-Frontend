@@ -1,3 +1,5 @@
+import { QuoteConversionForm } from "../components/QuoteConversionForm";
+import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { useCallback, useId, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAsyncResource } from "../../../shared/hooks/useAsyncResource";
@@ -94,7 +96,15 @@ function QuoteDetails({ quote, refresh }: { quote: Quote; refresh: () => void })
         <div><dt className="text-sm text-[#a7b4c8]">Criado em</dt><dd className="mt-2">{formatDate(quote.created_at)}</dd></div>
       </dl>
       {quote.expired && <p className="text-sm text-amber-200">Validade vencida. Atualize a proposta antes de registrar a aprovação.</p>}
+      <ItemsSummary items={quote.items ?? []} />
       <div><h2 className="font-semibold">Descrição do serviço</h2><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#a7b4c8]">{quote.description}</p></div>
+      {quote.custom_values.some(item => item.value !== null) && <section aria-label="Campos personalizados do orçamento">
+        <h2 className="font-semibold">Informações adicionais</h2>
+        <dl className="mt-3 grid gap-4 sm:grid-cols-2">{quote.custom_values.filter(item => item.value !== null).map(item => <div key={item.field_definition_id} className="min-w-0 rounded-xl bg-[#010b1b] p-4">
+          <dt className="break-words text-sm text-[#a7b4c8]">{item.field_definition.name}</dt>
+          <dd className="mt-2 whitespace-pre-wrap break-words">{item.field_definition.field_type === "BOOLEAN" ? (item.value === "true" ? "Sim" : "Não") : item.field_definition.field_type === "DATE" && item.value ? formatDate(item.value) : item.value}</dd>
+        </div>)}</dl>
+      </section>}
       {quote.terms && <div><h2 className="font-semibold">Condições e observações</h2><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#a7b4c8]">{quote.terms}</p></div>}
       {quote.work_order_id && <Link className={primaryButtonClass} to={`/work-orders/${quote.work_order_id}/details`}>Abrir ordem de serviço #{quote.work_order_id}</Link>}
       <PdfDownloadButton path={`/quotes/${quote.id}/pdf`} filename={`orcamento-${quote.id}.pdf`} />
@@ -102,19 +112,23 @@ function QuoteDetails({ quote, refresh }: { quote: Quote; refresh: () => void })
       {error && <button className={secondaryButtonClass} onClick={refresh}>Atualizar orçamento</button>}
       {quote.can_manage && <div className="flex flex-col flex-wrap gap-3 sm:flex-row">
         {quote.status === "RASCUNHO" && <button disabled={busy} className={secondaryButtonClass} onClick={() => { setAction(null); setEditing(true); }}>Editar orçamento</button>}
-        {quote.status === "APROVADO" && <button disabled={busy} className={primaryButtonClass} onClick={() => setAction("CONVERTIDO")}>Gerar ordem de serviço</button>}
-        {transitions[quote.status].map(status => <button key={status} disabled={busy || (quote.expired && ["APROVADO", "ENVIADO"].includes(status))} className={secondaryButtonClass} onClick={() => { setNote(""); setAction(status); }}>{actions[status]}</button>)}
+        {quote.status === "APROVADO" && <button disabled={busy || action === "CONVERTIDO"} className={primaryButtonClass} onClick={() => setAction("CONVERTIDO")}>Gerar ordem de serviço</button>}
+        {transitions[quote.status].map(status => <button key={status} disabled={busy || action === "CONVERTIDO" || (quote.expired && ["APROVADO", "ENVIADO"].includes(status))} className={secondaryButtonClass} onClick={() => { setNote(""); setAction(status); }}>{actions[status]}</button>)}
       </div>}
-      {action && <form aria-label="Confirmar ação do orçamento" className="space-y-4 rounded-xl border border-blue-400/30 p-4" onSubmit={e => {
+      {action === "CONVERTIDO" && <QuoteConversionForm quote={quote} onCancel={() => setAction(null)} onSaved={result => {
+        useDashboardStore.getState().clearSummary();
+        void navigate(`/work-orders/${result.work_order_id}/details`);
+      }} />}
+      {action && action !== "CONVERTIDO" && <form aria-label="Confirmar ação do orçamento" className="space-y-4 rounded-xl border border-blue-400/30 p-4" onSubmit={e => {
         e.preventDefault();
-        void run(() => action === "CONVERTIDO" ? QuoteService.convert(quote.id, quote.version) : QuoteService.status(quote.id, quote.version, action, note.trim() || undefined), result => {
+        void run(() => QuoteService.status(quote.id, quote.version, action, note.trim() || undefined), result => {
           if (result.work_order_id) { useDashboardStore.getState().clearSummary(); void navigate(`/work-orders/${result.work_order_id}/details`); }
           else refresh();
         });
       }}>
-        <p className="text-sm leading-6">{action === "CONVERTIDO" ? "Será criada uma OS com o cliente, a descrição e o valor aprovado. O orçamento continuará disponível para consulta." : action === "APROVADO" ? "Confirme que o cliente aprovou esta proposta. Esta ação registra a aprovação informada por você; não representa assinatura digital." : action === "ENVIADO" ? "Confirme que a proposta já foi enviada ao cliente. Nenhuma mensagem será enviada por esta ação." : action === "RASCUNHO" ? "A proposta poderá ser editada e precisará de nova aprovação antes de gerar uma OS." : `Confirma: ${actions[action].toLowerCase()}?`}</p>
-        {action !== "CONVERTIDO" && <SettingsField label="Observação da alteração" value={note} maxLength={500} disabled={busy} onChange={e => setNote(e.target.value)} />}
-        <div className="flex flex-col gap-3 sm:flex-row"><button disabled={busy} type="submit" className={primaryButtonClass}>{busy ? "Salvando…" : action === "CONVERTIDO" ? "Confirmar e gerar OS" : "Confirmar alteração"}</button><button disabled={busy} type="button" className={secondaryButtonClass} onClick={() => setAction(null)}>Voltar</button></div>
+        <p className="text-sm leading-6">{action === "APROVADO" ? "Confirme que o cliente aprovou esta proposta. Esta ação registra a aprovação informada por você; não representa assinatura digital." : action === "ENVIADO" ? "Confirme que a proposta já foi enviada ao cliente. Nenhuma mensagem será enviada por esta ação." : action === "RASCUNHO" ? "A proposta poderá ser editada e precisará de nova aprovação antes de gerar uma OS." : `Confirma: ${actions[action].toLowerCase()}?`}</p>
+        <SettingsField label="Observação da alteração" value={note} maxLength={500} disabled={busy} onChange={e => setNote(e.target.value)} />
+        <div className="flex flex-col gap-3 sm:flex-row"><button disabled={busy} type="submit" className={primaryButtonClass}>{busy ? "Salvando…" : "Confirmar alteração"}</button><button disabled={busy} type="button" className={secondaryButtonClass} onClick={() => setAction(null)}>Voltar</button></div>
       </form>}
       <div><h2 className="font-semibold">Histórico do orçamento</h2><ul className="mt-3 space-y-3">{quote.events?.map(event => <li key={event.id} className="rounded-xl border border-[#16345c] p-3 text-sm">
         <p>{event.action === "CRIADO" ? "Criado" : event.action === "EDITADO" ? "Editado" : quoteStatuses[event.action as QuoteStatus] ?? event.action} · revisão {event.version}</p><p className="mt-1 break-words text-[#a7b4c8]">{event.user_name} · {formatDateTime(event.created_at)}</p>{event.note && <p className="mt-2 break-words">{event.note}</p>}

@@ -21,10 +21,11 @@ test('empresa, contatos, endereço e logo persistem após recarregar', async ({ 
     await page.getByLabel('Nome fantasia').fill('Orbit oficina');
     await page.getByLabel('Telefone', { exact: true }).fill('11999998888');
     await page.getByLabel('E-mail da empresa').fill('contato@example.com');
-    await page.getByLabel('Rua, número e complemento').fill('Rua de teste, 123');
-    await page.getByLabel('Cidade', { exact: true }).fill('São Paulo');
-    await page.getByLabel('Estado', { exact: true }).selectOption('SP');
-    await page.getByLabel('CEP', { exact: true }).fill('01001-000');
+    await page.getByLabel('Cadastrar endereço', { exact: true }).check();
+    await page.getByLabel('UF *', { exact: true }).selectOption('35');
+    await page.getByLabel('Cidade *', { exact: true }).selectOption('3550308');
+    await page.getByLabel('Logradouro *', { exact: true }).fill('Rua de teste');
+    await page.getByLabel('Número', { exact: true }).fill('123');
     // A valid 1x1 PNG; upload before saving to ensure it preserves unsaved text.
     await page.getByLabel('Selecionar logo').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWQAAAABJRU5ErkJggg==', 'base64') });
     await expect(page.getByRole('img', { name: 'Logo da organização' })).toBeVisible();
@@ -33,7 +34,8 @@ test('empresa, contatos, endereço e logo persistem após recarregar', async ({ 
     await expect(page.getByText('Dados da organização atualizados.', { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel('Razão social / nome')).toHaveValue('Empresa atualizada');
-    await expect(page.getByLabel('CEP', { exact: true })).toHaveValue('01001000');
+    await expect(page.getByLabel('Logradouro *', { exact: true })).toHaveValue('Rua de teste');
+    await expect(page.getByLabel('Número', { exact: true })).toHaveValue('123');
     await expect(page.getByRole('img', { name: 'Logo da organização' })).toHaveAttribute('src', /^data:image\/png;base64,/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const other = await request.get(`${API}/organizations/me`, { headers: await apiAs(request, 'other@example.com') });

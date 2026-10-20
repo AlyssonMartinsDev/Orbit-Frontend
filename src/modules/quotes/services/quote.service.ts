@@ -1,3 +1,5 @@
+import type { WorkOrderCustomValueRequest, CustomFieldDefinitionSimpleResponse } from "../../custom-fields/types/custom-field.types";
+import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
 import { api } from "../../../shared/services/api";
 import { requireResponseData, type ApiResponse } from "../../../shared/types/api.types";
 
@@ -7,6 +9,9 @@ export const quoteStatuses = {
 } as const;
 export type QuoteStatus = keyof typeof quoteStatuses;
 export interface QuoteData {
+  custom_values?: WorkOrderCustomValueRequest[];
+  pricing_mode?: PricingMode;
+  items?: LineItem[];
   client_id: number;
   title: string;
   description: string;
@@ -15,6 +20,7 @@ export interface QuoteData {
   terms: string | null;
 }
 export interface Quote extends QuoteData {
+  custom_values: (WorkOrderCustomValueRequest & { field_definition: CustomFieldDefinitionSimpleResponse })[];
   id: number;
   client_name: string;
   status: QuoteStatus;
@@ -44,7 +50,7 @@ export const QuoteService = {
   async status(id: number, version: number, status: Exclude<QuoteStatus, "CONVERTIDO">, note?: string) {
     return requireResponseData((await api.post<ApiResponse<Quote>>(`/quotes/${id}/status`, { version, status, note })).data);
   },
-  async convert(id: number, version: number) {
-    return requireResponseData((await api.post<ApiResponse<Quote>>(`/quotes/${id}/convert`, { version })).data);
+  async convert(id: number, version: number, custom_values: WorkOrderCustomValueRequest[] = []) {
+    return requireResponseData((await api.post<ApiResponse<Quote>>(`/quotes/${id}/convert`, { version, custom_values })).data);
   },
 };

@@ -2,6 +2,8 @@
 
 Aplicação React, TypeScript e Vite para clientes, orçamentos, ordens de serviço e configurações.
 
+Versão **1.0.0**, primeiro marco formal do produto. Veja o [fechamento da etapa](CHANGELOG.md) e a [política de versionamento](VERSIONAMENTO.md).
+
 ## Desenvolvimento
 
 ```sh
@@ -28,8 +30,8 @@ Os testes de navegador iniciam um servidor isolado na porta 4175 e interceptam a
 ## Integração
 
 - O token de autenticação fica em `orbit_token`. Login, logout, expiração e mudanças em outras abas invalidam caches e respostas antigas.
-- A edição de OS salva o serviço e os campos personalizados em duas chamadas. Se a segunda falhar, a tela informa o salvamento parcial e permite tentar novamente.
-- Os campos personalizados usam `PUT /custom-fields/{id}/custom-fields`. O backend precisa confirmar a transação desse endpoint; a correção correspondente e três testes de persistência estão no projeto backend.
+- A edição de OS salva o serviço e os campos personalizados em uma única transação por `PUT /work_orders/{id}`. A rota de edição exclusiva dos campos continua disponível por compatibilidade.
+- Campos personalizados podem ser exclusivos de orçamento, exclusivos de OS ou compartilhados, com obrigatoriedade independente. A conversão copia os compartilhados e solicita os obrigatórios restantes.
 - Organização, conta e usuários usam a API real. Administradores editam a empresa e gerenciam acessos; gestores consultam a equipe; todos editam a própria conta.
 - Logos PNG/JPEG/WebP de até 2 MB são validados e reprocessados no backend, reduzidos a até 512 px e persistidos no banco.
 - Trocas de senha, redefinições por administrador e alterações de perfil de acesso/ativação invalidam sessões anteriores. Usuários são desativados, preservando o histórico.
@@ -51,6 +53,10 @@ PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:quotes
 Use **Exportar PDF** nos detalhes da ordem de serviço ou no menu de ações do acompanhamento. O download funciona em desktop e mobile, mostra o estado de geração e permite tentar novamente em caso de falha.
 
 O documento A4 inclui empresa e logo, cliente, descrição, valor, recebido, saldo, situações de serviço/pagamento e campos personalizados ativos da OS. Valores usam reais e datas usam o horário de Brasília. Descrições extensas continuam em páginas numeradas. Notas internas do cliente e campos personalizados do cadastro de clientes não são exportados.
+
+Os dois PDFs incluem os endereços cadastrados de cliente e organização. O orçamento usa a cópia salva dos seus campos personalizados; campos exclusivos do orçamento não são transferidos para a OS. Na OS, a opção **Incluir fotos no PDF** permite escolher imagens já enviadas, comprimidas e distribuídas em até quatro por página.
+
+Clientes e organizações possuem endereço principal estruturado, seleção de UF/cidade e preenchimento por CEP, com edição manual. Veja [endereços](../backend/docs/enderecos.md) e [anexos](../backend/docs/anexos-os.md).
 
 A geração ocorre no backend, autenticada e limitada à organização da sessão. É necessário instalar as dependências atualizadas de `requirements.txt` (ReportLab) e aplicar as migrações: o template atual consulta os recebimentos. O PDF reflete os dados atuais no momento da emissão e não é um documento fiscal nem um histórico imutável.
 

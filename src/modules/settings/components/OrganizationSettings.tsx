@@ -1,3 +1,5 @@
+import { AddressFields } from "../../addresses/components/AddressFields";
+import { addressDraft, addressPayload, type AddressInput } from "../../addresses/types/address.types";
 import { useId, useRef, useState } from "react";
 import { Building2, ImagePlus, Trash2 } from "lucide-react";
 import {
@@ -17,35 +19,6 @@ import { SettingsService } from "../services/settings.service";
 import type { Organization, OrganizationData } from "../types/settings.types";
 import { SettingsField, SaveError } from "./SettingsField";
 
-const states = [
-    "AC",
-    "AL",
-    "AP",
-    "AM",
-    "BA",
-    "CE",
-    "DF",
-    "ES",
-    "GO",
-    "MA",
-    "MT",
-    "MS",
-    "MG",
-    "PA",
-    "PB",
-    "PR",
-    "PE",
-    "PI",
-    "RJ",
-    "RN",
-    "RS",
-    "RO",
-    "RR",
-    "SC",
-    "SP",
-    "SE",
-    "TO",
-];
 function readImage(file: File): Promise<string> {
     if (
         !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
@@ -96,11 +69,10 @@ function OrganizationEditor({
         document: organization.document,
         phone: organization.phone,
         email: organization.email,
-        address_line: organization.address_line,
-        city: organization.city,
-        state: organization.state,
-        zip_code: organization.zip_code,
     }));
+    const [address, setAddress] = useState(() => addressDraft(organization.address));
+    const [addressChanged, setAddressChanged] = useState(false);
+    const [addressBusy, setAddressBusy] = useState(false);
     const [logo, setLogo] = useState(organization.logo_url);
     const { busy, error, run } = useSettingsMutation();
     const showMessage = useMessageStore((state) => state.showMessage);
@@ -112,15 +84,19 @@ function OrganizationEditor({
             aria-busy={busy}
             onSubmit={(event) => {
                 event.preventDefault();
-                if (!isAdmin) return;
+                if (!isAdmin || addressBusy) return;
+                let normalizedAddress: AddressInput | null | undefined;
+                if (addressChanged) {
+                    try { normalizedAddress = addressPayload(address); }
+                    catch (error) { showMessage(error instanceof Error ? error.message : "Confira o endereço.", "error"); return; }
+                }
                 void run(
                     () =>
                         SettingsService.updateOrganization({
                             ...form,
                             name: form.name.trim(),
                             email: form.email?.trim() || null,
-                            state: form.state || null,
-                            zip_code: form.zip_code || null,
+                            ...(addressChanged ? { address: normalizedAddress } : {}),
                         }),
                     () => {
                         showMessage(
@@ -267,67 +243,16 @@ function OrganizationEditor({
                         onChange={(e) => change("email", e.target.value)}
                     />
                 </FormSection>
-                <FormSection title="Endereço">
-                    <div className="sm:col-span-2">
-                        <SettingsField
-                            label="Rua, número e complemento"
-                            maxLength={255}
-                            autoComplete="street-address"
-                            value={form.address_line ?? ""}
-                            onChange={(e) =>
-                                change("address_line", e.target.value)
-                            }
-                        />
-                    </div>
-                    <SettingsField
-                        label="Cidade"
-                        maxLength={100}
-                        autoComplete="address-level2"
-                        value={form.city ?? ""}
-                        onChange={(e) => change("city", e.target.value)}
-                    />
-                    <div>
-                        <label
-                            htmlFor={`${id}-state`}
-                            className="mb-2 block text-sm text-[#a7b4c8]"
-                        >
-                            Estado
-                        </label>
-                        <select
-                            id={`${id}-state`}
-                            autoComplete="address-level1"
-                            value={form.state ?? ""}
-                            onChange={(e) => change("state", e.target.value)}
-                            className={inputClass}
-                        >
-                            <option value="">Selecione</option>
-                            {states.map((state) => (
-                                <option key={state}>{state}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <SettingsField
-                        label="CEP"
-                        inputMode="numeric"
-                        pattern="[0-9]{8}"
-                        title="Informe os 8 dígitos do CEP."
-                        maxLength={9}
-                        autoComplete="postal-code"
-                        value={form.zip_code ?? ""}
-                        onChange={(e) =>
-                            change(
-                                "zip_code",
-                                e.target.value.replace(/\D/g, "").slice(0, 8),
-                            )
-                        }
-                    />
-                </FormSection>
+                {!organization.address && !!(organization.address_line || organization.city || organization.state || organization.zip_code) && <p className="rounded-xl border border-amber-400/25 p-4 text-sm leading-6 text-amber-100">
+                    Endereço anterior preservado: {[organization.address_line, organization.city, organization.state, organization.zip_code].filter(Boolean).join(" · ")}. Para atualizá-lo, cadastre o endereço abaixo com a UF e a cidade do catálogo.
+                </p>}
+                <AddressFields value={address} onChange={next => { setAddress(next); setAddressChanged(true); }} disabled={busy || !isAdmin} onBusyChange={setAddressBusy} />
                 <SaveError message={error} />
                 {isAdmin && (
                     <div className="flex justify-end">
                         <button
                             type="submit"
-                            disabled={busy || !form.name.trim()}
+                            disabled={busy || addressBusy || !form.name.trim()}
                             className={primaryButtonClass}
                         >
                             {busy ? "Salvando…" : "Salvar organização"}

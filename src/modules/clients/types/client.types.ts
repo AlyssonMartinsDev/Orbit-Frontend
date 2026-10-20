@@ -1,9 +1,11 @@
+import type { Address, AddressInput } from "../../addresses/types/address.types";
 import type { PaymentStatus, WorkOrderStatus } from "../../work-orders/types/work-order.types";
 
 export interface ClientCustomValueRequest { field_definition_id: number; value: string | null }
 export interface ClientCustomValueResponse extends ClientCustomValueRequest { id: number }
 
 export interface ClientData {
+    address?: AddressInput | null;
     name: string;
     phone: string;
     email: string | null;
@@ -14,7 +16,8 @@ export interface ClientData {
 export type CreateClientRequest = ClientData;
 export type UpdateClientRequest = Partial<ClientData>;
 
-export interface ClientResponse extends Omit<ClientData, "custom_values"> {
+export interface ClientResponse extends Omit<ClientData, "custom_values" | "address"> {
+    address?: Address | null;
     id: number;
     created_at: string;
     updated_at: string;

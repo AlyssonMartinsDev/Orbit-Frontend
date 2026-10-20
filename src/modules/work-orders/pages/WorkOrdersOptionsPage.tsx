@@ -1,4 +1,4 @@
-import { ClipboardList, Plus } from "lucide-react";
+import { CalendarClock, ClipboardList, Plus } from "lucide-react";
 
 import { ModuleOptionsPage } from "../../../shared/components/module-options";
 
@@ -8,6 +8,12 @@ export function WorkOrdersOptionsPage() {
             title="Ordens de Serviço"
             subtitle="Gerencie as ordens de serviço, status, pagamentos e atendimentos."
             options={[
+                {
+                    title: "Prazos e acompanhamentos",
+                    description: "Organizar entregas, responsáveis e próximos retornos.",
+                    path: "/followups",
+                    icon: CalendarClock,
+                },
                 {
                     title: "Criar",
                     description: "Cadastrar uma nova ordem de serviço.",

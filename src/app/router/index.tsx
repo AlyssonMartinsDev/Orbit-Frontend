@@ -92,6 +92,10 @@ export const router = createBrowserRouter([
                         }),
                     },
                     {
+                        path: "/followups",
+                        lazy: async () => ({ Component: (await import("../../modules/followups/pages/FollowupsPage")).FollowupsPage }),
+                    },
+                    {
                         path: "/quotes",
                         lazy: async () => ({ Component: (await import("../../modules/quotes/pages/QuotesPage")).QuotesPage }),
                     },

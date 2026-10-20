@@ -1,3 +1,5 @@
+import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
+import { itemsTotal, type LineItem, type PricingMode } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -11,7 +13,7 @@ import {
 } from "../../../shared/components/form/FormSection";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
-import { CustomFieldService } from "../../custom-fields/services/custom-field.service";
+import { appliesTo } from "../../custom-fields/types/custom-field.types";
 import { useClientStore } from "../../../shared/store/client.store";
 import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
 import { useMessageStore } from "../../../shared/store/message.store";
@@ -51,6 +53,8 @@ export function WorkOrderForm({
         title: workOrder?.title ?? "",
         description: workOrder?.description ?? "",
         price: workOrder?.price ?? "0",
+        pricing_mode: workOrder?.pricing_mode ?? ("SIMPLE" as PricingMode),
+        items: workOrder?.items ?? ([] as LineItem[]),
         status_service:
             workOrder?.status_service ?? ("EM_ANDAMENTO" as WorkOrderStatus),
     }));
@@ -72,19 +76,20 @@ export function WorkOrderForm({
     const {
         customFields,
         isLoaded: fieldsLoaded,
+        isLoading: fieldsLoading,
         error: fieldsError,
         loadCustomFields,
     } = useCustomFieldStore();
     const showMessage = useMessageStore((state) => state.showMessage);
     useEffect(() => {
         if (mode === "create") void loadClients();
-        void loadCustomFields();
+        void loadCustomFields(true);
     }, [mode, loadClients, loadCustomFields]);
     const fields = customFields.filter(
-        (field) => field.module === "WORK_ORDER" && field.active,
+        (field) => appliesTo(field.module, "WORK_ORDER") && field.active,
     );
     const ready =
-        fieldsLoaded &&
+        fieldsLoaded && !fieldsLoading && !fieldsError &&
         (mode === "edit" || clientMode === "new" || clientsLoaded);
     const changeClient = (key: keyof typeof client, value: string) =>
         setClient((current) => ({ ...current, [key]: value }));
@@ -93,12 +98,14 @@ export function WorkOrderForm({
         event.preventDefault();
         if (submitting.current || !ready || !isCurrentSession(sessionId))
             return;
-        const price = Number(order.price);
+        const computed = order.pricing_mode === "ITEMIZED" ? itemsTotal(order.items) : order.price;
+        const price = computed ?? "";
         if (
             !order.title.trim() ||
-            !Number.isFinite(price) ||
-            price < 0 ||
-            order.price.trim() === ""
+            !Number.isFinite(Number(price)) ||
+            Number(price) < 0 ||
+            price.trim() === "" ||
+            (order.pricing_mode === "ITEMIZED" && order.items.some(item => !item.description.trim()))
         ) {
             showMessage(
                 "Preencha o título e um valor válido para o serviço.",
@@ -115,8 +122,6 @@ export function WorkOrderForm({
         }
         submitting.current = true;
         setIsSubmitting(true);
-        let mainSaved = false;
-        let savingCustomFields = false;
         const values = fields.map((field) => ({
             field_definition_id: field.id,
             value: customValues[field.id]?.trim() || null,
@@ -126,6 +131,8 @@ export function WorkOrderForm({
             title: order.title.trim(),
             description: order.description.trim(),
             price,
+            items: order.pricing_mode === "ITEMIZED" ? order.items : [],
+            ...(mode === "edit" ? { pricing_version: workOrder?.pricing_version ?? 0 } : {}),
         };
         const payload: CreateWorkOrderRequest = {
             client:
@@ -145,7 +152,7 @@ export function WorkOrderForm({
                 mode === "edit" && workOrder
                     ? await WorkOrderService.update(
                           workOrder.id,
-                          workOrderPayload,
+                          { ...workOrderPayload, custom_values: { values } },
                       )
                     : await WorkOrderService.create(payload);
             if (!isCurrentSession(sessionId)) return;
@@ -153,26 +160,9 @@ export function WorkOrderForm({
                 showMessage(response.message, "error");
                 return;
             }
-            mainSaved = true;
             useDashboardStore.getState().clearSummary();
             if (mode === "create" && clientMode === "new")
                 useClientStore.getState().clearClients();
-            if (mode === "edit" && workOrder && values.length > 0) {
-                savingCustomFields = true;
-                const result = await CustomFieldService.saveWorkOrderValues(
-                    workOrder.id,
-                    { values },
-                );
-                if (!isCurrentSession(sessionId)) return;
-                if (!result.success) {
-                    showMessage(
-                        `Dados principais salvos, mas os campos personalizados não foram atualizados. ${result.message}`,
-                        "warning",
-                    );
-                    return;
-                }
-                savingCustomFields = false;
-            }
             showMessage(
                 mode === "edit"
                     ? "Ordem de serviço atualizada."
@@ -183,10 +173,8 @@ export function WorkOrderForm({
         } catch (error) {
             if (!isCurrentSession(sessionId) || axios.isCancel(error)) return;
             showMessage(
-                mainSaved && savingCustomFields
-                    ? "Dados principais salvos, mas não foi possível salvar os campos personalizados. Tente novamente."
-                    : "Não foi possível salvar a ordem. Verifique sua conexão.",
-                mainSaved ? "warning" : "error",
+                "Não foi possível salvar a ordem. Verifique sua conexão.",
+                "error",
             );
         } finally {
             submitting.current = false;
@@ -428,30 +416,7 @@ export function WorkOrderForm({
                     <p className="text-sm leading-6 text-[#a7b4c8]">
                         O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
                     </p>
-                    <div className="sm:col-span-2">
-                        <label
-                            htmlFor={`${formId}-price`}
-                            className="mb-2 block text-sm text-[#a7b4c8]"
-                        >
-                            Valor (R$) *
-                        </label>
-                        <input
-                            id={`${formId}-price`}
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            step="0.01"
-                            required
-                            value={order.price}
-                            onChange={(event) =>
-                                setOrder((current) => ({
-                                    ...current,
-                                    price: event.target.value,
-                                }))
-                            }
-                            className={inputClass}
-                        />
-                    </div>
+                    <div className="sm:col-span-2"><PricingEditor mode={order.pricing_mode} items={order.items} price={order.price} priceLabel="Valor (R$)" onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
                     <div className="sm:col-span-2">
                         <label
                             htmlFor={`${formId}-description`}

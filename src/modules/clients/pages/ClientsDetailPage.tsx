@@ -1,3 +1,4 @@
+import { AddressSummary } from "../../addresses/components/AddressSummary";
 import { formatCurrency, formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
 import { formatPhone } from "../../../shared/utils/phone";
 import { useEffect } from "react";
@@ -916,6 +917,8 @@ export function ClientDetailsPage() {
 
                     </div>
 
+
+                    <div className="mt-4"><AddressSummary address={selectedClient.address} /></div>
 
                     {/* OBSERVAÇÕES */}
 

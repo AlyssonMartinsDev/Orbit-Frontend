@@ -1,10 +1,14 @@
+import { appliesTo } from "../../custom-fields/types/custom-field.types";
+import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { formatCurrency, formatDateTime as formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
 import { formatPhone } from "../../../shared/utils/phone";
 import { useWorkOrder } from "../hooks/useWorkOrder";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { PdfDownloadButton } from "../../../shared/components/PdfDownloadButton";
+import { WorkOrderPdfExport } from "../components/WorkOrderPdfExport";
+import { FollowupPanel } from "../../followups/components/FollowupPanel";
 import { WorkOrderPayments } from "../components/WorkOrderPayments";
+import { WorkOrderAttachments } from "../components/WorkOrderAttachments";
 
 import {
     ArrowLeft,
@@ -585,10 +589,7 @@ export function WorkOrderDetailsPage() {
         workOrder.custom_values
             ?.filter(
                 (customField) =>
-                    customField
-                        .field_definition
-                        .module ===
-                    "WORK_ORDER"
+                    appliesTo(customField.field_definition.module, "WORK_ORDER")
             )
             .sort(
                 (a, b) =>
@@ -744,10 +745,10 @@ export function WorkOrderDetailsPage() {
                             Ver orçamento de origem #{workOrder.source_quote_id}
                         </Link>
                     )}
-                    <PdfDownloadButton
-                        path={`/work_orders/${workOrder.id}/pdf`}
-                        filename={`ordem-de-servico-${workOrder.id}.pdf`}
-                    />
+                    <WorkOrderPdfExport key={`pdf:${workOrder.id}`} orderId={workOrder.id} />
+                    <a href="#anexos" className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-[#24436b] px-4 py-2 text-sm text-blue-200 hover:bg-blue-500/10">
+                        Fotos e anexos
+                    </a>
                 </div>
             </header>
 
@@ -1221,6 +1222,9 @@ export function WorkOrderDetailsPage() {
             </section>
 
 
+            <ItemsSummary items={workOrder.items ?? []} />
+            <FollowupPanel key={`followup:${workOrder.id}:${workOrder.status_service}`} orderId={workOrder.id} />
+            <WorkOrderAttachments key={`attachments:${workOrder.id}`} orderId={workOrder.id} />
             <WorkOrderPayments key={workOrder.id} orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={refresh} />
 
             {/* =================================================

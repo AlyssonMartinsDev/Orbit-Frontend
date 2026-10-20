@@ -1,3 +1,5 @@
+import { AddressFields } from "../../addresses/components/AddressFields";
+import { addressDraft, addressPayload, type Address, type AddressInput } from "../../addresses/types/address.types";
 import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -21,11 +23,13 @@ import type { ClientData } from "../types/client.types";
 
 interface ClientFormProps {
     mode?: "create" | "edit";
-    client?: ClientData & { id: number };
+    client?: Omit<ClientData, "address"> & { id: number; address?: Address | null };
 }
 
 export function ClientForm({ mode = "create", client }: ClientFormProps) {
     const navigate = useNavigate();
+    const [address, setAddress] = useState(() => addressDraft(client?.address));
+    const [addressBusy, setAddressBusy] = useState(false);
     const formId = useId();
     const submitting = useRef(false);
     const [sessionId] = useState(() => getSession().id);
@@ -61,16 +65,20 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
 
     const handleSubmit = async (event: React.SubmitEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (submitting.current || !isLoaded || !isCurrentSession(sessionId))
+        if (submitting.current || addressBusy || !isLoaded || !isCurrentSession(sessionId))
             return;
         if (!formData.name.trim()) {
             showMessage("Informe o nome do cliente.", "error");
             return;
         }
+        let normalizedAddress: AddressInput | null;
+        try { normalizedAddress = addressPayload(address); }
+        catch (error) { showMessage(error instanceof Error ? error.message : "Confira o endereço.", "error"); return; }
         submitting.current = true;
         setIsSubmitting(true);
         const payload: ClientData = {
             ...formData,
+            address: normalizedAddress,
             name: formData.name.trim(),
             email: formData.email?.trim() || null,
             notes: formData.notes?.trim() || null,
@@ -221,6 +229,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
                         ))}
                     </FormSection>
                 )}
+                <AddressFields value={address} onChange={setAddress} disabled={isSubmitting} onBusyChange={setAddressBusy} />
                 <FormSection title="Observações">
                     <div className="sm:col-span-2">
                         <label
@@ -250,7 +259,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
                     </button>
                     <button
                         type="submit"
-                        disabled={!isLoaded || isSubmitting}
+                        disabled={!isLoaded || isSubmitting || addressBusy}
                         className={primaryButtonClass}
                     >
                         <Save size={18} />
