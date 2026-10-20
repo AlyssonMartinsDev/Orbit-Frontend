@@ -1,6 +1,7 @@
 import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
 import { itemsTotal, type LineItem, type PricingMode } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
+import { PaymentFields } from "../../../shared/components/form/PaymentFields";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Save } from "lucide-react";
@@ -50,6 +51,8 @@ export function WorkOrderForm({
         notes: "",
     });
     const [order, setOrder] = useState(() => ({
+        payment_method: workOrder?.payment_method ?? null,
+        payment_details: workOrder?.payment_details ?? null,
         title: workOrder?.title ?? "",
         description: workOrder?.description ?? "",
         price: workOrder?.price ?? "0",
@@ -417,6 +420,7 @@ export function WorkOrderForm({
                         O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
                     </p>
                     <div className="sm:col-span-2"><PricingEditor mode={order.pricing_mode} items={order.items} price={order.price} priceLabel="Valor (R$)" onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
+                    <PaymentFields method={order.payment_method} details={order.payment_details} onChange={(payment_method, payment_details) => setOrder(current => ({ ...current, payment_method, payment_details }))} />
                     <div className="sm:col-span-2">
                         <label
                             htmlFor={`${formId}-description`}

@@ -1,6 +1,7 @@
 import { AddressSummary } from "../../addresses/components/AddressSummary";
 import { formatCurrency, formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
 import { formatPhone } from "../../../shared/utils/phone";
+import { formatCpfCnpj } from "../../../shared/utils/documents";
 import { useEffect } from "react";
 import { useClient } from "../hooks/useClient";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
@@ -918,6 +919,10 @@ export function ClientDetailsPage() {
                     </div>
 
 
+                    <dl className="mt-4 text-sm">
+                        <dt className="text-[#a7b4c8]">CPF/CNPJ</dt>
+                        <dd className="mt-1 break-all text-white">{formatCpfCnpj(selectedClient.cpf_cnpj) || "Não informado"}</dd>
+                    </dl>
                     <div className="mt-4"><AddressSummary address={selectedClient.address} /></div>
 
                     {/* OBSERVAÇÕES */}

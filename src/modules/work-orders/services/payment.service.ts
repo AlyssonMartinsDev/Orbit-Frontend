@@ -9,10 +9,14 @@ export const paymentMethods = {
   DINHEIRO: "Dinheiro",
   CARTAO_CREDITO: "Cartão de crédito",
   CARTAO_DEBITO: "Cartão de débito",
-  TRANSFERENCIA: "Transferência",
-  OUTRO: "Outro",
+  LINK_PAGAMENTO: "Link de pagamento",
+  TRANSFERENCIA: "Transferência bancária",
+  OUTRO: "Outros",
 } as const;
 export type PaymentMethod = keyof typeof paymentMethods;
+export function formatPaymentMethod(method: PaymentMethod | null | undefined): string {
+  return method ? paymentMethods[method] ?? "Não informado" : "Não informado";
+}
 export interface Payment {
   id: number;
   amount: string;

@@ -5,6 +5,7 @@ export interface ClientCustomValueRequest { field_definition_id: number; value: 
 export interface ClientCustomValueResponse extends ClientCustomValueRequest { id: number }
 
 export interface ClientData {
+    cpf_cnpj?: string | null;
     address?: AddressInput | null;
     name: string;
     phone: string;

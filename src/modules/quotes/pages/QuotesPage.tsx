@@ -1,4 +1,6 @@
+import { PaymentDetailsSummary } from "../../../shared/components/form/PaymentDetailsSummary";
 import { QuoteConversionForm } from "../components/QuoteConversionForm";
+import { formatPaymentMethod } from "../../work-orders/services/payment.service";
 import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { useCallback, useId, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -94,7 +96,9 @@ function QuoteDetails({ quote, refresh }: { quote: Quote; refresh: () => void })
         <div><dt className="text-sm text-[#a7b4c8]">Valor do orçamento</dt><dd className="mt-2 text-xl font-semibold">{formatCurrency(quote.price)}</dd></div>
         <div><dt className="text-sm text-[#a7b4c8]">Válido até</dt><dd className="mt-2">{quote.valid_until ? formatDate(quote.valid_until) : "Não definido"}</dd></div>
         <div><dt className="text-sm text-[#a7b4c8]">Criado em</dt><dd className="mt-2">{formatDate(quote.created_at)}</dd></div>
+        <div><dt className="text-sm text-[#a7b4c8]">Método de pagamento</dt><dd className="mt-2">{formatPaymentMethod(quote.payment_method)}</dd></div>
       </dl>
+      <PaymentDetailsSummary method={quote.payment_method} details={quote.payment_details} />
       {quote.expired && <p className="text-sm text-amber-200">Validade vencida. Atualize a proposta antes de registrar a aprovação.</p>}
       <ItemsSummary items={quote.items ?? []} />
       <div><h2 className="font-semibold">Descrição do serviço</h2><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#a7b4c8]">{quote.description}</p></div>

@@ -1,6 +1,7 @@
 import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
 import { useDocumentFields } from "../../custom-fields/hooks/useDocumentFields";
 import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
+import { PaymentFields } from "../../../shared/components/form/PaymentFields";
 import { itemsTotal } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -17,7 +18,7 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
   const [customValues, setCustomValues] = useState<Record<number, string>>(() => Object.fromEntries(
     quote?.custom_values.map(item => [item.field_definition_id, item.value ?? ""]) ?? [],
   ));
-  const [data, setData] = useState<QuoteData>(() => ({ pricing_mode: quote?.pricing_mode ?? "SIMPLE", items: quote?.items ?? [], client_id: quote?.client_id ?? 0, title: quote?.title ?? "", description: quote?.description ?? "", price: quote?.price ?? "", valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
+  const [data, setData] = useState<QuoteData>(() => ({ payment_method: quote?.payment_method ?? null, payment_details: quote?.payment_details ?? null, pricing_mode: quote?.pricing_mode ?? "SIMPLE", items: quote?.items ?? [], client_id: quote?.client_id ?? 0, title: quote?.title ?? "", description: quote?.description ?? "", price: quote?.price ?? "", valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
   const { clients, isLoaded, isLoading, error: clientError, loadClients } = useClientStore();
   const { busy, error, run } = useSettingsMutation();
   const request = useRef<{ fingerprint: string; id: string } | null>(null);
@@ -54,6 +55,7 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
         <textarea required maxLength={20000} rows={5} className={`${inputClass} mt-2 resize-y`} value={data.description} onChange={e => field("description", e.target.value)} />
       </label>
       <PricingEditor mode={data.pricing_mode ?? "SIMPLE"} items={data.items ?? []} price={data.price} priceLabel="Valor do orçamento (R$)" onChange={value => setData(current => ({ ...current, ...value }))} />
+      <PaymentFields method={data.payment_method ?? null} details={data.payment_details ?? null} onChange={(payment_method, payment_details) => setData(current => ({ ...current, payment_method, payment_details }))} />
       <div className="grid gap-5 sm:grid-cols-2">
 
         <SettingsField label="Válido até" type="date" value={data.valid_until ?? ""} onChange={e => field("valid_until", e.target.value || null)} />

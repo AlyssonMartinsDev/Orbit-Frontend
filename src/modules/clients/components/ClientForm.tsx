@@ -6,6 +6,8 @@ import axios from "axios";
 import { Save } from "lucide-react";
 import { ClientService } from "../services/client.service";
 import { PhoneInput } from "../../../shared/components/inputs";
+import { CpfCnpjInput } from "../../../shared/components/inputs/CpfCnpjInput";
+import { documentError, normalizeDocument } from "../../../shared/utils/documents";
 import {
     FormSection,
     inputClass,
@@ -38,6 +40,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
         name: client?.name ?? "",
         phone: client?.phone ?? "",
         email: client?.email ?? "",
+        cpf_cnpj: client?.cpf_cnpj ?? "",
         notes: client?.notes ?? "",
         custom_values: client?.custom_values ?? [],
     }));
@@ -50,7 +53,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
     const fields = customFields.filter(
         (field) => field.module === "CLIENT" && field.active,
     );
-    const change = (key: "name" | "phone" | "email" | "notes", value: string) =>
+    const change = (key: "name" | "phone" | "email" | "notes" | "cpf_cnpj", value: string) =>
         setFormData((current) => ({ ...current, [key]: value }));
     const changeCustom = (id: number, value: string) =>
         setFormData((current) => ({
@@ -71,6 +74,12 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
             showMessage("Informe o nome do cliente.", "error");
             return;
         }
+        const cpfCnpjError = documentError(formData.cpf_cnpj);
+        if (cpfCnpjError) {
+            showMessage(cpfCnpjError, "error");
+            document.getElementById(`${formId}-cpf-cnpj`)?.focus();
+            return;
+        }
         let normalizedAddress: AddressInput | null;
         try { normalizedAddress = addressPayload(address); }
         catch (error) { showMessage(error instanceof Error ? error.message : "Confira o endereço.", "error"); return; }
@@ -81,6 +90,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
             address: normalizedAddress,
             name: formData.name.trim(),
             email: formData.email?.trim() || null,
+            cpf_cnpj: normalizeDocument(formData.cpf_cnpj ?? "") || null,
             notes: formData.notes?.trim() || null,
             custom_values: fields.map((field) => ({
                 field_definition_id: field.id,
@@ -192,6 +202,22 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
                             }
                             className={inputClass}
                         />
+                    </div>
+                    <div className="sm:col-span-2">
+                        <label htmlFor={`${formId}-cpf-cnpj`} className="mb-2 block text-sm text-[#a7b4c8]">
+                            CPF/CNPJ
+                        </label>
+                        <CpfCnpjInput
+                            id={`${formId}-cpf-cnpj`}
+                            value={formData.cpf_cnpj ?? ""}
+                            onChange={(value) => change("cpf_cnpj", value)}
+                            className={inputClass}
+                            aria-describedby={`${formId}-document-hint`}
+                            aria-invalid={Boolean(documentError(formData.cpf_cnpj))}
+                        />
+                        <p id={`${formId}-document-hint`} className="mt-2 text-xs text-[#a7b4c8]">
+                            {documentError(formData.cpf_cnpj) ?? "Opcional. Aceita CPF, CNPJ numérico e CNPJ alfanumérico."}
+                        </p>
                     </div>
                 </FormSection>
                 {error && (

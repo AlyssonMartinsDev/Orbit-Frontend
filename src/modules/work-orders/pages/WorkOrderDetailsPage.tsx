@@ -1,3 +1,5 @@
+import { PaymentDetailsSummary } from "../../../shared/components/form/PaymentDetailsSummary";
+import { formatPaymentMethod } from "../services/payment.service";
 import { appliesTo } from "../../custom-fields/types/custom-field.types";
 import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { formatCurrency, formatDateTime as formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
@@ -1113,6 +1115,11 @@ export function WorkOrderDetailsPage() {
                             >
                                 {workOrder.status_payment}
                             </span>
+                            <dl className="mt-4 text-sm">
+                                <dt className="text-[#8290a8]">Método de pagamento</dt>
+                                <dd className="mt-1 break-words text-[#f8fafc]">{formatPaymentMethod(workOrder.payment_method)}</dd>
+                            </dl>
+                            <PaymentDetailsSummary method={workOrder.payment_method} details={workOrder.payment_details} />
 
                         </div>
 

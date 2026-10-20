@@ -1,4 +1,6 @@
+import type { PaymentDetails } from "../../../shared/types/payment-details";
 import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
+import type { PaymentMethod } from "../services/payment.service";
 import type {
     CustomFieldModule,
     CustomFieldPresetType,
@@ -50,6 +52,8 @@ export type PaymentStatus =
 // ============================================================
 
 export interface WorkOrderDataRequest {
+    payment_details?: PaymentDetails | null;
+  payment_method?: PaymentMethod | null;
     pricing_mode?: PricingMode;
     items?: LineItem[];
     title: string;
@@ -141,6 +145,8 @@ export interface CreateWorkOrderRequest {
 // ============================================================
 
 export interface UpdateWorkOrderRequest {
+    payment_details?: PaymentDetails | null;
+  payment_method?: PaymentMethod | null;
     custom_values?: WorkOrderCustomValuesRequest;
     pricing_mode?: PricingMode;
     items?: LineItem[];
@@ -158,6 +164,8 @@ export interface UpdateWorkOrderRequest {
 // ============================================================
 
 export interface WorkOrderResponse {
+    payment_details: PaymentDetails | null;
+  payment_method: PaymentMethod | null;
     pricing_mode?: PricingMode;
     items?: LineItem[];
     pricing_version?: number;
@@ -207,6 +215,8 @@ export type WorkOrderDetailsResponse = WorkOrderResponse;
  * exibida na página de acompanhamento.
  */
 export interface WorkOrderListItem {
+    payment_details: PaymentDetails | null;
+  payment_method: PaymentMethod | null;
     id: number;
 
     client:
