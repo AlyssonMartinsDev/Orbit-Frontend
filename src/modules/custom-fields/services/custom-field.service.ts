@@ -17,12 +17,14 @@ export class CustomFieldService {
     // Busca os campos personalizados.
     // Quando module for informado, retorna somente os campos daquele módulo.
     static async getAll(
-        module?: CustomFieldModule
+        module?: CustomFieldModule,
+        signal?: AbortSignal,
     ): Promise<ApiResponse<CustomFieldDefinitionResponse[]>> {
 
         const response = await api.get<ApiResponse<CustomFieldDefinitionResponse[]>>(
             "/custom-fields",
             {
+                signal,
                 params: { active_only: false, ...(module ? { module } : {}) },
             }
         );

@@ -102,6 +102,7 @@ export interface WorkOrderFieldDefinition {
     CustomFieldPresetType | null;
 
     required: boolean;
+    required_quote: boolean;
     display_order: number;
     placeholder: string | null;
 }
@@ -140,6 +141,7 @@ export interface CreateWorkOrderRequest {
 // ============================================================
 
 export interface UpdateWorkOrderRequest {
+    custom_values?: WorkOrderCustomValuesRequest;
     pricing_mode?: PricingMode;
     items?: LineItem[];
     pricing_version?: number;

@@ -62,6 +62,7 @@ export function CustomFieldInput({
                                   ? "date"
                                   : "text"
                     }
+                    maxLength={500}
                     step={field.field_type === "NUMBER" ? "any" : undefined}
                     placeholder={field.placeholder ?? undefined}
                     onChange={(event) => onChange(event.target.value)}

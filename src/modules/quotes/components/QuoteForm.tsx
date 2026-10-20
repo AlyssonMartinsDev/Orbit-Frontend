@@ -1,3 +1,5 @@
+import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
+import { useDocumentFields } from "../../custom-fields/hooks/useDocumentFields";
 import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
 import { itemsTotal } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
@@ -11,6 +13,10 @@ import { QuoteService, type Quote, type QuoteData } from "../services/quote.serv
 
 export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved: (quote: Quote) => void; onCancel?: () => void }) {
   const clientFieldId = useId();
+  const { data: fields, isLoading: fieldsLoading, error: fieldsError, refresh: refreshFields } = useDocumentFields("QUOTE");
+  const [customValues, setCustomValues] = useState<Record<number, string>>(() => Object.fromEntries(
+    quote?.custom_values.map(item => [item.field_definition_id, item.value ?? ""]) ?? [],
+  ));
   const [data, setData] = useState<QuoteData>(() => ({ pricing_mode: quote?.pricing_mode ?? "SIMPLE", items: quote?.items ?? [], client_id: quote?.client_id ?? 0, title: quote?.title ?? "", description: quote?.description ?? "", price: quote?.price ?? "", valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
   const { clients, isLoaded, isLoading, error: clientError, loadClients } = useClientStore();
   const { busy, error, run } = useSettingsMutation();
@@ -19,16 +25,18 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
   const field = <K extends keyof QuoteData>(key: K, value: QuoteData[K]) => setData(current => ({ ...current, [key]: value }));
   return <form aria-label={quote ? "Editar orçamento" : "Novo orçamento"} className="space-y-5" onSubmit={event => {
     event.preventDefault();
-    if (!isLoaded || !data.client_id) return;
+    if (!isLoaded || !data.client_id || !fields || fieldsLoading || fieldsError) return;
     const price = data.pricing_mode === "ITEMIZED" ? itemsTotal(data.items ?? []) : data.price;
     if (price === null) return;
-    const payload = { ...data, price, items: data.pricing_mode === "ITEMIZED" ? data.items : [] };
+    const payload = { ...data, custom_values: fields.map(field => ({ field_definition_id: field.id, value: customValues[field.id]?.trim() || null })), price, items: data.pricing_mode === "ITEMIZED" ? data.items : [] };
     const fingerprint = JSON.stringify(payload);
     if (request.current?.fingerprint !== fingerprint) request.current = { fingerprint, id: crypto.randomUUID() };
     const requestId = request.current.id;
     void run(() => quote ? QuoteService.update(quote.id, { ...payload, version: quote.version }) : QuoteService.create({ ...payload, request_id: requestId }), onSaved);
   }}>
     <SaveError message={error} />
+    {fieldsError && <RequestError message={fieldsError} onRetry={refreshFields} />}
+    {fieldsLoading && <p role="status" className="text-sm">Carregando campos do orçamento…</p>}
     {clientError && <RequestError message={clientError} onRetry={() => void loadClients(true)} />}
     <fieldset disabled={busy} className="min-w-0 space-y-5">
       <div><label htmlFor={clientFieldId} className="block text-sm text-[#a7b4c8]">Cliente *</label>
@@ -53,8 +61,12 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
       <label className="block text-sm text-[#a7b4c8]">Condições e observações
         <textarea maxLength={5000} rows={3} className={`${inputClass} mt-2 resize-y`} value={data.terms ?? ""} onChange={e => field("terms", e.target.value || null)} placeholder="Prazo de execução, condições de pagamento e observações da proposta." />
       </label>
+      {!!fields?.length && <section aria-label="Campos personalizados do orçamento" className="space-y-4">
+        <h2 className="font-semibold">Informações adicionais</h2>
+        <div className="grid gap-5 sm:grid-cols-2">{fields.map(field => <CustomFieldInput key={field.id} field={{ ...field, required: field.required_quote }} id={`${clientFieldId}-custom-${field.id}`} value={customValues[field.id] ?? ""} onChange={value => setCustomValues(current => ({ ...current, [field.id]: value }))} />)}</div>
+      </section>}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <button type="submit" disabled={!isLoaded || isLoading} className={primaryButtonClass}>{busy ? "Salvando…" : "Salvar orçamento"}</button>
+        <button type="submit" disabled={!isLoaded || isLoading || !fields || fieldsLoading || !!fieldsError} className={primaryButtonClass}>{busy ? "Salvando…" : "Salvar orçamento"}</button>
         {onCancel && <button type="button" className={secondaryButtonClass} onClick={onCancel}>Voltar sem salvar</button>}
       </div>
     </fieldset>

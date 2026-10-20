@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
     testDir: './tests/e2e',
-    testMatch: ['settings-integration.spec.mjs', 'pdf-integration.spec.mjs', 'platform-integration.spec.mjs', 'payments-integration.spec.mjs', 'quotes-integration.spec.mjs', 'followups-integration.spec.mjs', 'items-integration.spec.mjs'],
+    testMatch: ['settings-integration.spec.mjs', 'pdf-integration.spec.mjs', 'platform-integration.spec.mjs', 'payments-integration.spec.mjs', 'quotes-integration.spec.mjs', 'followups-integration.spec.mjs', 'items-integration.spec.mjs', 'attachments-integration.spec.mjs', 'custom-fields-integration.spec.mjs', 'addresses-integration.spec.mjs'],
     workers: 1,
     timeout: 45_000,
     use: { baseURL: 'http://127.0.0.1:4176', channel: process.env.PLAYWRIGHT_BROWSER_CHANNEL || undefined, viewport: { width: 375, height: 812 }, trace: 'retain-on-failure' },

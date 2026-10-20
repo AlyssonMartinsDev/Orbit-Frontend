@@ -23,6 +23,8 @@ import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
 const moduleLabels: Record<CustomFieldModule, string> = {
     CLIENT: "Cliente",
     WORK_ORDER: "Ordem de Serviço",
+    QUOTE: "Orçamento",
+    BOTH: "Orçamento e Ordem de Serviço",
 };
 
 
@@ -254,9 +256,9 @@ export function CustomFieldsPage() {
                                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#56657D]">
 
                                         <span>
-                                            {field.required
-                                                ? "Obrigatório"
-                                                : "Opcional"}
+                                            {field.module === "BOTH"
+                                                ? `Orçamento: ${field.required_quote ? "obrigatório" : "opcional"} · OS: ${field.required ? "obrigatório" : "opcional"}`
+                                                : (field.module === "QUOTE" ? field.required_quote : field.required) ? "Obrigatório" : "Opcional"}
                                         </span>
 
                                         <span>
@@ -299,7 +301,7 @@ export function CustomFieldsPage() {
                 subtitle={
                     selectedCustomField
                         ? "Altere as configurações do campo."
-                        : "Configure um novo campo para clientes ou ordens de serviço."
+                        : "Configure um novo campo para clientes, orçamentos ou ordens de serviço."
                 }
                 onClose={handleCloseModal}
             >

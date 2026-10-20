@@ -7,7 +7,9 @@ export type CustomFieldType =
 
 export type CustomFieldModule =
     | "CLIENT"
-    | "WORK_ORDER";
+    | "WORK_ORDER"
+    | "QUOTE"
+    | "BOTH";
 
 
 export type CustomFieldPresetType =
@@ -29,6 +31,7 @@ export interface CustomFieldDefinitionResponse {
     preset_type: CustomFieldPresetType | null;
 
     required: boolean;
+    required_quote: boolean;
 
     active: boolean;
 
@@ -48,6 +51,7 @@ export interface CreateCustomFieldRequest {
     preset_type?: CustomFieldPresetType | null;
 
     required?: boolean;
+    required_quote?: boolean;
 
     active?: boolean;
 
@@ -67,6 +71,7 @@ export interface UpdateCustomFieldRequest {
     preset_type?: CustomFieldPresetType | null;
 
     required?: boolean;
+    required_quote?: boolean;
 
     active?: boolean;
 
@@ -88,6 +93,7 @@ export interface CustomFieldDefinitionSimpleResponse {
     preset_type: CustomFieldPresetType | null;
 
     required: boolean;
+    required_quote: boolean;
 
     display_order: number;
 
@@ -115,4 +121,8 @@ export interface WorkOrderCustomValueRequest {
 
 export interface SaveWorkOrderCustomValuesRequest {
     values: WorkOrderCustomValueRequest[];
+}
+
+export function appliesTo(module: CustomFieldModule, target: CustomFieldModule): boolean {
+    return module === target || (module === "BOTH" && (target === "QUOTE" || target === "WORK_ORDER"));
 }

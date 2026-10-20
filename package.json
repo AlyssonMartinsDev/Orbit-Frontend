@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,9 @@
     "test:settings": "playwright test --config playwright.settings.config.mjs settings-integration.spec.mjs",
     "test:pdf": "playwright test --config playwright.settings.config.mjs pdf-integration.spec.mjs",
     "test:platform": "playwright test --config playwright.settings.config.mjs platform-integration.spec.mjs",
+    "test:attachments": "playwright test --config playwright.settings.config.mjs attachments-integration.spec.mjs",
+    "test:addresses": "playwright test --config playwright.settings.config.mjs addresses-integration.spec.mjs",
+    "test:custom-fields": "playwright test --config playwright.settings.config.mjs custom-fields-integration.spec.mjs",
     "test:items": "playwright test --config playwright.settings.config.mjs items-integration.spec.mjs",
     "test:followups": "playwright test --config playwright.settings.config.mjs followups-integration.spec.mjs",
     "test:quotes": "playwright test --config playwright.settings.config.mjs quotes-integration.spec.mjs",

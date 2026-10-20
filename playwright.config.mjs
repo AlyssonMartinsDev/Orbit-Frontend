@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
     testDir: './tests/e2e',
-    testIgnore: ['settings-integration.spec.mjs', 'pdf-integration.spec.mjs', 'platform-integration.spec.mjs', 'payments-integration.spec.mjs', 'quotes-integration.spec.mjs', 'followups-integration.spec.mjs', 'items-integration.spec.mjs'],
+    testIgnore: ['settings-integration.spec.mjs', 'pdf-integration.spec.mjs', 'platform-integration.spec.mjs', 'payments-integration.spec.mjs', 'quotes-integration.spec.mjs', 'followups-integration.spec.mjs', 'items-integration.spec.mjs', 'attachments-integration.spec.mjs', 'custom-fields-integration.spec.mjs', 'addresses-integration.spec.mjs'],
     fullyParallel: true,
     workers: 3,
     timeout: 90_000,

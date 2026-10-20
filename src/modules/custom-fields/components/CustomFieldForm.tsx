@@ -74,6 +74,8 @@ export function CustomFieldForm({
                 customField?.required
                 ?? false,
 
+            required_quote: customField?.required_quote ?? false,
+
             active:
                 customField?.active
                 ?? true,
@@ -109,6 +111,8 @@ export function CustomFieldForm({
         setFormData((current) => ({
             ...current,
             module,
+            required: module === "QUOTE" ? false : current.required,
+            required_quote: ["QUOTE", "BOTH"].includes(module) ? current.required_quote : false,
         }));
     };
 
@@ -156,9 +160,7 @@ export function CustomFieldForm({
 
             if (!response.success || !response.data) {
                 showMessage(
-                    mode === "edit"
-                        ? "Erro ao atualizar campo personalizado."
-                        : "Erro ao criar campo personalizado.",
+                    response.message || "Não foi possível salvar o campo personalizado.",
                     "error"
                 );
 
@@ -242,13 +244,13 @@ export function CustomFieldForm({
                         Cliente
                     </option>
 
-                    <option value="WORK_ORDER">
-                        Ordem de Serviço
-                    </option>
+                    <option value="WORK_ORDER">Ordem de Serviço</option>
+                    <option value="QUOTE">Orçamento</option>
+                    <option value="BOTH">Orçamento e Ordem de Serviço</option>
                 </select>
 
                 <p className="mt-2 text-xs text-[#56657D]">
-                    Define onde este campo personalizado será utilizado.
+                    Campos compartilhados são copiados ao gerar a OS. A obrigatoriedade é independente em cada documento.
                 </p>
             </div>
 
@@ -322,6 +324,7 @@ export function CustomFieldForm({
                                         ? "Ex: Site do cliente"
                                         : "Ex: AnyDesk ID"
                     }
+                    maxLength={100}
                     value={formData.name}
                     onChange={(event) =>
                         handleChange(
@@ -400,6 +403,7 @@ export function CustomFieldForm({
                                         ? "Ex: Digite o endereço do site"
                                         : "Ex: Digite o ID do AnyDesk"
                     }
+                    maxLength={150}
                     value={formData.placeholder ?? ""}
                     onChange={(event) =>
                         handleChange(
@@ -446,32 +450,15 @@ export function CustomFieldForm({
             {/* OPÇÕES */}
             <div className="space-y-3 rounded-2xl border border-[#16345C]/60 bg-[#07182D]/60 p-4">
 
-                <label className="flex cursor-pointer items-center justify-between gap-4">
-
-                    <div>
-                        <p className="text-sm font-medium text-[#F8FAFC]">
-                            Campo obrigatório
-                        </p>
-
-                        <p className="mt-1 text-xs text-[#56657D]">
-                            Exige preenchimento antes de salvar.
-                        </p>
-                    </div>
-
-                    <input
-                        type="checkbox"
-                        checked={formData.required ?? false}
-                        onChange={(event) =>
-                            handleChange(
-                                "required",
-                                event.target.checked
-                            )
-                        }
-                        className="h-4 w-4 accent-[#2583FF]"
-                    />
-
-                </label>
-
+                {formData.module !== "QUOTE" && <label className="flex cursor-pointer items-center justify-between gap-4">
+                    <span className="text-sm text-[#F8FAFC]">{formData.module === "CLIENT" ? "Obrigatório no cliente" : "Obrigatório na ordem de serviço"}</span>
+                    <input type="checkbox" checked={formData.required ?? false} onChange={event => handleChange("required", event.target.checked)} className="h-5 w-5 shrink-0 accent-[#2583FF]" />
+                </label>}
+                {["QUOTE", "BOTH"].includes(formData.module) && <label className="flex cursor-pointer items-center justify-between gap-4">
+                    <span className="text-sm text-[#F8FAFC]">Obrigatório no orçamento</span>
+                    <input type="checkbox" checked={formData.required_quote ?? false} onChange={event => handleChange("required_quote", event.target.checked)} className="h-5 w-5 shrink-0 accent-[#2583FF]" />
+                </label>}
+                <p className="text-xs leading-5 text-[#8290A8]">Campos obrigatórios na OS serão solicitados ao converter o orçamento, caso ainda não estejam preenchidos.</p>
 
                 <div className="border-t border-[#16345C]/60" />
 
@@ -485,7 +472,7 @@ export function CustomFieldForm({
 
                         <p className="mt-1 text-xs text-[#56657D]">
                             Campos inativos não aparecem em novos
-                            clientes ou ordens de serviço.
+                            clientes, orçamentos ou ordens de serviço.
                         </p>
                     </div>
 

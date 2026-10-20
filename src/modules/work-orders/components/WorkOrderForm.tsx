@@ -13,7 +13,7 @@ import {
 } from "../../../shared/components/form/FormSection";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
-import { CustomFieldService } from "../../custom-fields/services/custom-field.service";
+import { appliesTo } from "../../custom-fields/types/custom-field.types";
 import { useClientStore } from "../../../shared/store/client.store";
 import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
 import { useMessageStore } from "../../../shared/store/message.store";
@@ -76,19 +76,20 @@ export function WorkOrderForm({
     const {
         customFields,
         isLoaded: fieldsLoaded,
+        isLoading: fieldsLoading,
         error: fieldsError,
         loadCustomFields,
     } = useCustomFieldStore();
     const showMessage = useMessageStore((state) => state.showMessage);
     useEffect(() => {
         if (mode === "create") void loadClients();
-        void loadCustomFields();
+        void loadCustomFields(true);
     }, [mode, loadClients, loadCustomFields]);
     const fields = customFields.filter(
-        (field) => field.module === "WORK_ORDER" && field.active,
+        (field) => appliesTo(field.module, "WORK_ORDER") && field.active,
     );
     const ready =
-        fieldsLoaded &&
+        fieldsLoaded && !fieldsLoading && !fieldsError &&
         (mode === "edit" || clientMode === "new" || clientsLoaded);
     const changeClient = (key: keyof typeof client, value: string) =>
         setClient((current) => ({ ...current, [key]: value }));
@@ -121,8 +122,6 @@ export function WorkOrderForm({
         }
         submitting.current = true;
         setIsSubmitting(true);
-        let mainSaved = false;
-        let savingCustomFields = false;
         const values = fields.map((field) => ({
             field_definition_id: field.id,
             value: customValues[field.id]?.trim() || null,
@@ -153,7 +152,7 @@ export function WorkOrderForm({
                 mode === "edit" && workOrder
                     ? await WorkOrderService.update(
                           workOrder.id,
-                          workOrderPayload,
+                          { ...workOrderPayload, custom_values: { values } },
                       )
                     : await WorkOrderService.create(payload);
             if (!isCurrentSession(sessionId)) return;
@@ -161,26 +160,9 @@ export function WorkOrderForm({
                 showMessage(response.message, "error");
                 return;
             }
-            mainSaved = true;
             useDashboardStore.getState().clearSummary();
             if (mode === "create" && clientMode === "new")
                 useClientStore.getState().clearClients();
-            if (mode === "edit" && workOrder && values.length > 0) {
-                savingCustomFields = true;
-                const result = await CustomFieldService.saveWorkOrderValues(
-                    workOrder.id,
-                    { values },
-                );
-                if (!isCurrentSession(sessionId)) return;
-                if (!result.success) {
-                    showMessage(
-                        `Dados principais salvos, mas os campos personalizados não foram atualizados. ${result.message}`,
-                        "warning",
-                    );
-                    return;
-                }
-                savingCustomFields = false;
-            }
             showMessage(
                 mode === "edit"
                     ? "Ordem de serviço atualizada."
@@ -191,10 +173,8 @@ export function WorkOrderForm({
         } catch (error) {
             if (!isCurrentSession(sessionId) || axios.isCancel(error)) return;
             showMessage(
-                mainSaved && savingCustomFields
-                    ? "Dados principais salvos, mas não foi possível salvar os campos personalizados. Tente novamente."
-                    : "Não foi possível salvar a ordem. Verifique sua conexão.",
-                mainSaved ? "warning" : "error",
+                "Não foi possível salvar a ordem. Verifique sua conexão.",
+                "error",
             );
         } finally {
             submitting.current = false;

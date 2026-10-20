@@ -12,11 +12,14 @@ export async function fetchPdf(
   });
   if (response.status === 404) {
     throw new Error(
-      "A ordem de serviço não foi encontrada. Atualize a página e tente novamente.",
+      "O documento ou uma foto selecionada não está disponível. Atualize a página e selecione novamente.",
     );
   }
   if (response.status === 403) {
     throw new Error("Você não tem permissão para exportar este documento.");
+  }
+  if (response.status === 409) {
+    throw new Error("Uma foto selecionada está indisponível ou inválida. Atualize os anexos e tente novamente.");
   }
   if (
     response.status !== 200 ||
