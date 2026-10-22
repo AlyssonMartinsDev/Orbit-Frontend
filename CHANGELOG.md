@@ -6,6 +6,22 @@ O produto segue a [política de versionamento](VERSIONAMENTO.md). Este arquivo r
 
 Próxima etapa aberta, ainda sem alterações ou versão definida.
 
+## 1.1.0 — 2026-10-22
+
+Evolução compatível do marco 1.0.0; não há quebra de contrato que justifique 2.0.0.
+
+### Funcionalidades
+
+- Módulo de estoque com produtos, categorias, indicadores, pesquisa, filtros, paginação e histórico de movimentações.
+- Integração de produtos cadastrados com orçamentos e OS, incluindo preços históricos, disponibilidade e referência às movimentações.
+- Card compartilhado Produtos e Serviços com produtos cadastrados, produtos avulsos e serviços, edição na lista e totais exatos.
+- Formulários e detalhes responsivos; preservação do modo de valor único e dos documentos anteriores.
+
+### Validação e entrega
+
+- Testes de criação, edição, persistência, conversão e estoque, incluindo telas em 320 e 1440 px.
+- Publicar após a API 1.1.0 com as migrações aplicadas. O registro em develop não representa implantação em produção.
+
 ## 1.0.0 — 2026-10-19
 
 Primeiro marco formal integrado com o backend 1.0.0. Fecha a etapa de atendimento, propostas, execução e acompanhamento de serviços.

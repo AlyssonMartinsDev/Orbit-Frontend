@@ -35,11 +35,14 @@ export async function mockApi(page, handler) {
         else if (path === '/organizations/me') data = organization;
         else if (path === '/dashboard/summary') data = summary;
         else if (path === '/work_orders/tracking') data = tracking;
+        else if (path === '/followups/1') data = { id: 1, title: order.title, client_name: client.name, status_service: order.status_service, due_on: null, next_followup_on: null, assigned_to_id: null, assigned_to_name: null, version: 0, overdue: false, followup_pending: false, can_manage: true, events: [], page: 1, total_pages: 1 };
+        else if (path === '/followups/team') data = [{ id: profile.id, name: profile.name }];
         else if (/\/work_orders\/\d+\/payments$/.test(path)) data = { total: '150.00', received: '0.00', balance: '150.00', status_payment: 'PENDENTE', review_required: false, can_register: true, can_cancel: true, payments: [] };
         else if (path === '/custom-fields') data = [field];
         else if (path.endsWith('/custom-fields')) data = [];
         else if (/\/clients\/1/.test(path)) data = { ...client, summary: { total_work_orders: 1, open_work_orders: 1, finished_work_orders: 0, total_services_value: 150 }, work_orders: [order] };
         else if (path === '/clients/') data = req.method() === 'POST' ? { ...client, ...req.postDataJSON() } : [client];
+        else if (/\/work_orders\/\d+\/attachments$/.test(path)) data = { items: [], can_delete: true, total_bytes: 0, max_files: 30, max_file_bytes: 10485760, max_total_bytes: 104857600 };
         else if (path.startsWith('/work_orders/')) data = order;
         else return route.fulfill({ status: 404, json: { success: false, message: `Endpoint inesperado: ${path}` } });
         return route.fulfill({ json: { success: true, message: 'OK', data } });

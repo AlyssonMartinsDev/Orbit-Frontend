@@ -35,6 +35,11 @@ export const router = createBrowserRouter([
             {
                 Component: ProtectedLayout,
                 children: [
+                    { path: "/inventory", lazy: async () => ({ Component: (await import("../../modules/inventory/pages/InventoryPage")).InventoryPage }) },
+                    { path: "/inventory/categories", lazy: async () => ({ Component: (await import("../../modules/inventory/pages/CategoriesPage")).CategoriesPage }) },
+                    { path: "/inventory/create", lazy: async () => ({ Component: (await import("../../modules/inventory/pages/ProductFormPage")).ProductFormPage }) },
+                    { path: "/inventory/:id/edit", lazy: async () => ({ Component: (await import("../../modules/inventory/pages/ProductFormPage")).ProductFormPage }) },
+                    { path: "/inventory/:id", lazy: async () => ({ Component: (await import("../../modules/inventory/pages/ProductDetailsPage")).ProductDetailsPage }) },
                     {
                         path: "/dashboard",
                         lazy: async () => ({

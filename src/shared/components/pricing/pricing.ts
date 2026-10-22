@@ -1,5 +1,5 @@
 export type PricingMode = "SIMPLE" | "ITEMIZED";
-export interface LineItem { description: string; quantity: string; unit_price: string }
+export interface LineItem { kind?: "SERVICE" | "PRODUCT"; description: string; quantity: string; unit_price: string }
 
 function scaled(value: string, places: number): bigint | null {
   if (!/^\d+(\.\d+)?$/.test(value)) return null;
@@ -29,4 +29,14 @@ export function itemsTotal(items: LineItem[]): string | null {
     sum += cents;
   }
   return sum > 9999999999n ? null : decimal(sum);
+}
+
+export function sumAmounts(amounts: string[]): string | null {
+  let total = 0n;
+  for (const amount of amounts) {
+    const cents = scaled(amount, 2);
+    if (cents === null) return null;
+    total += cents;
+  }
+  return total > 9999999999n ? null : decimal(total);
 }

@@ -3,6 +3,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  Package,
   Settings,
   UserCog,
   Users,
@@ -36,6 +37,7 @@ export const sidebarMenu: SidebarMenuItem[] = [
     path: "/quotes",
     icon: FileText,
   },
+  { title: "Estoque", path: "/inventory", icon: Package },
   {
     title: "Usuários",
     path: "/settings/users",

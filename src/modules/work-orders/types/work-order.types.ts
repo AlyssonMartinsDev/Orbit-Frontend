@@ -1,4 +1,7 @@
+import type { DocumentProduct } from "../../inventory/types/document-product.types";
+import type { PaymentDetails } from "../../../shared/types/payment-details";
 import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
+import type { PaymentMethod } from "../services/payment.service";
 import type {
     CustomFieldModule,
     CustomFieldPresetType,
@@ -50,8 +53,13 @@ export type PaymentStatus =
 // ============================================================
 
 export interface WorkOrderDataRequest {
+    payment_details?: PaymentDetails | null;
+  payment_method?: PaymentMethod | null;
     pricing_mode?: PricingMode;
     items?: LineItem[];
+    products?: DocumentProduct[];
+    service_price?: string | null;
+    products_total?: string;
     title: string;
     description: string;
     status_service: WorkOrderStatus;
@@ -123,6 +131,7 @@ export interface WorkOrderCustomValue {
 // ============================================================
 
 export interface CreateWorkOrderRequest {
+    request_id?: string;
     client: WorkOrderClientRequest;
 
     work_order: WorkOrderDataRequest;
@@ -141,9 +150,14 @@ export interface CreateWorkOrderRequest {
 // ============================================================
 
 export interface UpdateWorkOrderRequest {
+    payment_details?: PaymentDetails | null;
+  payment_method?: PaymentMethod | null;
     custom_values?: WorkOrderCustomValuesRequest;
     pricing_mode?: PricingMode;
     items?: LineItem[];
+    products?: DocumentProduct[];
+    service_price?: string | null;
+    products_total?: string;
     pricing_version?: number;
     title?: string;
     description?: string;
@@ -158,8 +172,13 @@ export interface UpdateWorkOrderRequest {
 // ============================================================
 
 export interface WorkOrderResponse {
+    payment_details: PaymentDetails | null;
+  payment_method: PaymentMethod | null;
     pricing_mode?: PricingMode;
     items?: LineItem[];
+    products?: DocumentProduct[];
+    service_price?: string | null;
+    products_total?: string;
     pricing_version?: number;
     id: number;
     source_quote_id?: number | null;
@@ -207,6 +226,8 @@ export type WorkOrderDetailsResponse = WorkOrderResponse;
  * exibida na página de acompanhamento.
  */
 export interface WorkOrderListItem {
+    payment_details: PaymentDetails | null;
+  payment_method: PaymentMethod | null;
     id: number;
 
     client:

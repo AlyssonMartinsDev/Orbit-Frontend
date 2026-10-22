@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { itemsTotal, lineAmount } from '../src/shared/components/pricing/pricing.ts';
+import { itemsTotal, lineAmount, sumAmounts } from '../src/shared/components/pricing/pricing.ts';
 
 test('itens usam centavos exatos e arredondamento por linha', () => {
     assert.equal(itemsTotal([{ description: 'A', quantity: '1.5', unit_price: '100.01' }, { description: 'B', quantity: '2', unit_price: '9.99' }]), '170.00');
@@ -11,4 +11,11 @@ test('itens incompletos, excedentes e valores inválidos não geram total', () =
     assert.equal(itemsTotal([]), null);
     for (const [quantity, unit_price] of [['0','1'], ['-1','1'], ['NaN','1'], ['1.0001','1'], ['1','1.001'], ['2','99999999.99'], ['1e3','2'], ['', '0']]) assert.equal(itemsTotal([{ description: 'A', quantity, unit_price }]), null);
     assert.equal(itemsTotal([{ description: 'Cortesia', quantity: '1', unit_price: '0' }]), '0.00');
+});
+
+test('total de serviços e produtos mantém centavos e limite', () => {
+    assert.equal(sumAmounts(['0.10', '0.20']), '0.30');
+    assert.equal(sumAmounts(['100.00', '25.00']), '125.00');
+    assert.equal(sumAmounts(['99999999.99', '0.01']), null);
+    assert.equal(sumAmounts(['-1', '2']), null);
 });

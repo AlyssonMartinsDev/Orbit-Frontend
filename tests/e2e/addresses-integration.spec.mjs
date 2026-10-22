@@ -18,6 +18,67 @@ async function newClient(page) {
     await page.getByLabel('Telefone *', { exact: true }).fill('11988887777');
     await page.getByLabel('Cadastrar endereço', { exact: true }).check();
 }
+test('CPF/CNPJ: máscara dinâmica, validação, persistência, edição e limpeza no mobile', async ({ page, request }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    const headers = await setup(page, request);
+    await page.goto('/clients/create');
+    await page.getByLabel('Nome *', { exact: true }).fill('Cliente documento');
+    await page.getByLabel('Telefone *', { exact: true }).fill('11988887777');
+    const document = page.getByLabel('CPF/CNPJ', { exact: true });
+    await document.fill('52998224724');
+    await page.getByRole('button', { name: 'Salvar cliente', exact: true }).click();
+    await expect(page).toHaveURL(/\/clients\/create$/);
+    await expect(document).toHaveAttribute('aria-invalid', 'true');
+    expect((await (await request.get(`${API}/clients/`, { headers })).json()).data).toHaveLength(0);
+    await document.fill('');
+    await document.pressSequentially('52998224725');
+    await expect(document).toHaveValue('529.982.247-25');
+    await document.evaluate(element => element.setSelectionRange(11, 11));
+    await document.press('Delete');
+    await expect(document).toHaveValue('529.982.247-5');
+    await document.fill('52998224725');
+    await document.evaluate(element => element.setSelectionRange(12, 12));
+    await document.press('Backspace');
+    await expect(document).toHaveValue('529.982.242-5');
+    await document.fill('529.982.247-25');
+    await page.getByRole('button', { name: 'Salvar cliente', exact: true }).click();
+    await expect(page).toHaveURL(/\/clients\/list$/);
+    const clients = (await (await request.get(`${API}/clients/`, { headers })).json()).data;
+    expect(clients).toHaveLength(1);
+    const id = clients[0].id;
+    expect(clients[0].cpf_cnpj).toBe('52998224725');
+    await page.goto(`/clients/${id}/details`);
+    await expect(page.locator('dd').filter({ hasText: '529.982.247-25' })).toBeVisible();
+    for (const [raw, formatted] of [['04252011000110', '04.252.011/0001-10'], ['12abc34501de35', '12.ABC.345/01DE-35'], ['', '']]) {
+        await page.goto(`/clients/${id}/edit`);
+        await document.fill('');
+        if (raw) await document.pressSequentially(raw);
+        await expect(document).toHaveValue(formatted);
+        expect(await page.evaluate(() => window.document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.getByRole('button', { name: 'Salvar cliente', exact: true }).click();
+        await expect(page).toHaveURL(/\/clients\/list$/);
+        expect((await (await request.get(`${API}/clients/${id}`, { headers })).json()).data.cpf_cnpj).toBe(raw.toUpperCase() || null);
+        await page.goto(`/clients/${id}/edit`);
+        await page.reload();
+        await expect(document).toHaveValue(formatted);
+        await page.goto(`/clients/${id}/details`);
+        await expect(page.locator('dl').filter({ has: page.locator('dt', { hasText: 'CPF/CNPJ' }) })).toContainText(formatted || 'Não informado');
+    }
+});
+
+test('CPF/CNPJ: cliente sem documento continua válido', async ({ page, request }) => {
+    const headers = await setup(page, request);
+    await page.goto('/clients/create');
+    await page.getByLabel('Nome *', { exact: true }).fill('Sem documento');
+    await page.getByLabel('Telefone *', { exact: true }).fill('11988887777');
+    await page.getByRole('button', { name: 'Salvar cliente', exact: true }).click();
+    await expect(page).toHaveURL(/\/clients\/list$/);
+    const [client] = (await (await request.get(`${API}/clients/`, { headers })).json()).data;
+    expect(client.cpf_cnpj).toBeNull();
+    await page.goto(`/clients/${client.id}/edit`);
+    await expect(page.getByLabel('CPF/CNPJ', { exact: true })).toHaveValue('');
+});
+
 for (const width of [320, 1440]) {
     test(`CEP e endereço persistem em cliente e organização em ${width}px`, async ({ page, request }, info) => {
         await page.setViewportSize({ width, height: 900 });

@@ -6,6 +6,10 @@ A versão **1.0.0**, de 19/10/2026, encerra esta etapa funcional e estabelece a 
 
 O número representa o produto integrado. Os dois repositórios recebem a tag anotada `v1.0.0`, cada uma apontando para seu próprio commit de fechamento. Publicar commits/tags em `develop` registra o marco; não significa que a produção foi atualizada.
 
+## Marco 1.1.0
+
+Em 22/10/2026, o estoque e sua integração com documentos encerram uma evolução MINOR compatível. O card e os PDFs unificados preservam o modo de valor único e os registros anteriores. A versão conjunta é 1.1.0 e a tag anotada correspondente é `v1.1.0` em cada repositório; não há BREAKING CHANGE nem promoção automática para produção.
+
 ## Política
 
 Seguimos [Versionamento Semântico](https://semver.org/lang/pt-BR/):
@@ -28,7 +32,7 @@ Mudanças que removam endpoints/campos suportados ou exijam adaptação incompat
 5. Tags publicadas são imutáveis: correções recebem novo commit e nova versão. Não mover tags nem usar force-push para substituir um lançamento.
 6. A promoção para `main` e a implantação devem ocorrer em uma etapa própria, com as migrações e o armazenamento preparados.
 
-A próxima etapa começa na seção Não lançado. Se acrescentar funcionalidades compatíveis, seu próximo fechamento será **1.1.0**. Correções isoladas do marco atual podem sair como **1.0.1**.
+A próxima etapa começa na seção Não lançado. Novas funcionalidades compatíveis podem fechar em **1.2.0**; correções isoladas do marco atual podem sair como **1.1.1**.
 
 ## Fonte da versão e validação
 
@@ -44,5 +48,5 @@ PLAYWRIGHT_BROWSER_CHANNEL=chrome npx playwright test --config playwright.settin
 
 As duas suítes de navegador devem rodar em sequência. A suíte de integração depende do backend irmão e de suas dependências de desenvolvimento instaladas; usa banco e servidores descartáveis. Consulte [README](README.md) para detalhes.
 
-O frontend 1.0.0 deve ser usado com o backend 1.0.0 e suas migrações aplicadas. Publique primeiro a API compatível e depois o frontend. [Notas desta versão](CHANGELOG.md).
+O frontend 1.1.0 deve ser usado com o backend 1.1.0 e suas migrações aplicadas. Publique primeiro a API compatível e depois o frontend. [Notas desta versão](CHANGELOG.md).
 
