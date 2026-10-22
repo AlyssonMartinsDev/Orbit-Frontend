@@ -1,7 +1,7 @@
+import { DocumentItemsSummary } from "../../../shared/components/pricing/DocumentItemsSummary";
 import { PaymentDetailsSummary } from "../../../shared/components/form/PaymentDetailsSummary";
 import { formatPaymentMethod } from "../services/payment.service";
 import { appliesTo } from "../../custom-fields/types/custom-field.types";
-import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { formatCurrency, formatDateTime as formatDate, formatDate as formatCustomDate } from "../../../shared/utils/format";
 import { formatPhone } from "../../../shared/utils/phone";
 import { useWorkOrder } from "../hooks/useWorkOrder";
@@ -1229,7 +1229,7 @@ export function WorkOrderDetailsPage() {
             </section>
 
 
-            <ItemsSummary items={workOrder.items ?? []} />
+            <DocumentItemsSummary items={workOrder.items ?? []} products={workOrder.products ?? []} servicePrice={workOrder.service_price ?? workOrder.price} total={workOrder.price} order />
             <FollowupPanel key={`followup:${workOrder.id}:${workOrder.status_service}`} orderId={workOrder.id} />
             <WorkOrderAttachments key={`attachments:${workOrder.id}`} orderId={workOrder.id} />
             <WorkOrderPayments key={workOrder.id} orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={refresh} />

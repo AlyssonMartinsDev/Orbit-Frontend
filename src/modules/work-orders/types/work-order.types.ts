@@ -1,3 +1,4 @@
+import type { DocumentProduct } from "../../inventory/types/document-product.types";
 import type { PaymentDetails } from "../../../shared/types/payment-details";
 import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
 import type { PaymentMethod } from "../services/payment.service";
@@ -56,6 +57,9 @@ export interface WorkOrderDataRequest {
   payment_method?: PaymentMethod | null;
     pricing_mode?: PricingMode;
     items?: LineItem[];
+    products?: DocumentProduct[];
+    service_price?: string | null;
+    products_total?: string;
     title: string;
     description: string;
     status_service: WorkOrderStatus;
@@ -127,6 +131,7 @@ export interface WorkOrderCustomValue {
 // ============================================================
 
 export interface CreateWorkOrderRequest {
+    request_id?: string;
     client: WorkOrderClientRequest;
 
     work_order: WorkOrderDataRequest;
@@ -150,6 +155,9 @@ export interface UpdateWorkOrderRequest {
     custom_values?: WorkOrderCustomValuesRequest;
     pricing_mode?: PricingMode;
     items?: LineItem[];
+    products?: DocumentProduct[];
+    service_price?: string | null;
+    products_total?: string;
     pricing_version?: number;
     title?: string;
     description?: string;
@@ -168,6 +176,9 @@ export interface WorkOrderResponse {
   payment_method: PaymentMethod | null;
     pricing_mode?: PricingMode;
     items?: LineItem[];
+    products?: DocumentProduct[];
+    service_price?: string | null;
+    products_total?: string;
     pricing_version?: number;
     id: number;
     source_quote_id?: number | null;

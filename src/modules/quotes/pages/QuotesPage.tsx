@@ -1,7 +1,7 @@
+import { DocumentItemsSummary } from "../../../shared/components/pricing/DocumentItemsSummary";
 import { PaymentDetailsSummary } from "../../../shared/components/form/PaymentDetailsSummary";
 import { QuoteConversionForm } from "../components/QuoteConversionForm";
 import { formatPaymentMethod } from "../../work-orders/services/payment.service";
-import { ItemsSummary } from "../../../shared/components/pricing/ItemsSummary";
 import { useCallback, useId, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAsyncResource } from "../../../shared/hooks/useAsyncResource";
@@ -100,7 +100,7 @@ function QuoteDetails({ quote, refresh }: { quote: Quote; refresh: () => void })
       </dl>
       <PaymentDetailsSummary method={quote.payment_method} details={quote.payment_details} />
       {quote.expired && <p className="text-sm text-amber-200">Validade vencida. Atualize a proposta antes de registrar a aprovação.</p>}
-      <ItemsSummary items={quote.items ?? []} />
+      <DocumentItemsSummary items={quote.items ?? []} products={quote.products ?? []} servicePrice={quote.service_price ?? quote.price} total={quote.price} />
       <div><h2 className="font-semibold">Descrição do serviço</h2><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-[#a7b4c8]">{quote.description}</p></div>
       {quote.custom_values.some(item => item.value !== null) && <section aria-label="Campos personalizados do orçamento">
         <h2 className="font-semibold">Informações adicionais</h2>

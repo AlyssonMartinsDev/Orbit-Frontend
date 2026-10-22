@@ -42,7 +42,7 @@ for (const width of [320, 1440]) {
         expect(orders[0].price).toBe('170.00');
         expect(orders[0].items).toHaveLength(2);
         await page.goto(`/work-orders/${id}/details`);
-        await expect(page.getByRole('region', { name: 'Itens do serviço' })).toContainText('Mão de obra');
+        await expect(page.getByRole('region', { name: 'Produtos e Serviços' })).toContainText('Mão de obra');
         const download = page.waitForEvent('download');
         await page.getByRole('button', { name: 'Exportar PDF', exact: true }).click();
         expect((await download).suggestedFilename()).toBe(`ordem-de-servico-${id}.pdf`);
@@ -74,7 +74,7 @@ test('orçamento com itens preserva detalhamento na conversão', async ({ page, 
     await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
     await expect(page).toHaveURL(/\/quotes\/\d+$/);
     const id = Number(page.url().split('/').pop());
-    await expect(page.getByRole('region', { name: 'Itens do serviço' })).toContainText('Peça de reposição');
+    await expect(page.getByRole('region', { name: 'Produtos e Serviços' })).toContainText('Peça de reposição');
     await page.getByRole('button', { name: 'Editar orçamento', exact: true }).click();
     await expect(page.getByRole('radio', { name: 'Detalhar itens', exact: true })).toBeChecked();
     await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
@@ -83,7 +83,7 @@ test('orçamento com itens preserva detalhamento na conversão', async ({ page, 
     await page.getByRole('button', { name: 'Gerar ordem de serviço', exact: true }).click();
     await page.getByRole('button', { name: 'Confirmar e gerar OS', exact: true }).click();
     await expect(page).toHaveURL(/\/work-orders\/\d+\/details$/);
-    await expect(page.getByRole('region', { name: 'Itens do serviço' })).toContainText('Mão de obra');
+    await expect(page.getByRole('region', { name: 'Produtos e Serviços' })).toContainText('Mão de obra');
     const quote = (await (await request.get(`${API}/quotes/${id}`, { headers })).json()).data;
     const order = (await (await request.get(`${API}/work_orders/${quote.work_order_id}`, { headers })).json()).data;
     expect(order.items).toEqual(quote.items);

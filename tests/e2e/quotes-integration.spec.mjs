@@ -149,7 +149,7 @@ for (const width of [320, 1440]) {
         await page.getByRole('button', { name: 'Editar orçamento', exact: true }).click();
         await page.getByLabel('Valor do orçamento (R$)', { exact: false }).fill('1450.75');
         await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
-        await expect(page.getByText(/R\$\s*1.450,75/)).toBeVisible();
+        await expect(page.getByRole('region', { name: 'Produtos e Serviços', exact: true }).locator('strong')).toHaveText(/R\$\s*1.450,75/);
         const download = page.waitForEvent('download');
         await page.getByRole('button', { name: 'Exportar PDF', exact: true }).click();
         expect((await download).suggestedFilename()).toBe(`orcamento-${id}.pdf`);

@@ -1,3 +1,4 @@
+import type { DocumentProduct } from "../../inventory/types/document-product.types";
 import type { PaymentDetails } from "../../../shared/types/payment-details";
 import type { WorkOrderCustomValueRequest, CustomFieldDefinitionSimpleResponse } from "../../custom-fields/types/custom-field.types";
 import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
@@ -11,6 +12,9 @@ export const quoteStatuses = {
 } as const;
 export type QuoteStatus = keyof typeof quoteStatuses;
 export interface QuoteData {
+  products?: DocumentProduct[];
+  service_price?: string | null;
+  products_total?: string;
   payment_details?: PaymentDetails | null;
   payment_method?: PaymentMethod | null;
   custom_values?: WorkOrderCustomValueRequest[];

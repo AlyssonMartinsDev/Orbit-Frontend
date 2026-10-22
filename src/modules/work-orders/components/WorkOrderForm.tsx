@@ -1,5 +1,6 @@
-import { PricingEditor } from "../../../shared/components/pricing/PricingEditor";
-import { itemsTotal, type LineItem, type PricingMode } from "../../../shared/components/pricing/pricing";
+import { DocumentItemsEditor } from "../../../shared/components/pricing/DocumentItemsEditor";
+import { productPayload, productsTotal, type DocumentProduct } from "../../inventory/types/document-product.types";
+import { itemsTotal, sumAmounts, type LineItem, type PricingMode } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
 import { PaymentFields } from "../../../shared/components/form/PaymentFields";
 import { Link, useNavigate } from "react-router-dom";
@@ -50,12 +51,14 @@ export function WorkOrderForm({
         email: "",
         notes: "",
     });
+    const createRequest = useRef<{ fingerprint: string; id: string } | null>(null);
     const [order, setOrder] = useState(() => ({
         payment_method: workOrder?.payment_method ?? null,
         payment_details: workOrder?.payment_details ?? null,
         title: workOrder?.title ?? "",
         description: workOrder?.description ?? "",
-        price: workOrder?.price ?? "0",
+        price: workOrder?.service_price ?? workOrder?.price ?? "0",
+        products: workOrder?.products ?? ([] as DocumentProduct[]),
         pricing_mode: workOrder?.pricing_mode ?? ("SIMPLE" as PricingMode),
         items: workOrder?.items ?? ([] as LineItem[]),
         status_service:
@@ -103,6 +106,8 @@ export function WorkOrderForm({
             return;
         const computed = order.pricing_mode === "ITEMIZED" ? itemsTotal(order.items) : order.price;
         const price = computed ?? "";
+        const productSum = productsTotal(order.products);
+        if (productSum === null || sumAmounts([price, productSum]) === null) { showMessage("Confira os valores dos serviços e produtos. O total máximo é R$ 99.999.999,99.", "error"); return; }
         if (
             !order.title.trim() ||
             !Number.isFinite(Number(price)) ||
@@ -134,6 +139,8 @@ export function WorkOrderForm({
             title: order.title.trim(),
             description: order.description.trim(),
             price,
+            service_price: price,
+            products: productPayload(order.products),
             items: order.pricing_mode === "ITEMIZED" ? order.items : [],
             ...(mode === "edit" ? { pricing_version: workOrder?.pricing_version ?? 0 } : {}),
         };
@@ -150,6 +157,11 @@ export function WorkOrderForm({
             work_order: workOrderPayload,
             custom_values: { values },
         };
+        if (mode === "create") {
+            const fingerprint = JSON.stringify(payload);
+            if (createRequest.current?.fingerprint !== fingerprint) createRequest.current = { fingerprint, id: crypto.randomUUID() };
+            payload.request_id = createRequest.current.id;
+        }
         try {
             const response =
                 mode === "edit" && workOrder
@@ -419,7 +431,7 @@ export function WorkOrderForm({
                     <p className="text-sm leading-6 text-[#a7b4c8]">
                         O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
                     </p>
-                    <div className="sm:col-span-2"><PricingEditor mode={order.pricing_mode} items={order.items} price={order.price} priceLabel="Valor (R$)" onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
+                    <div className="sm:col-span-2"><DocumentItemsEditor pricing_mode={order.pricing_mode} items={order.items} price={order.price} products={order.products} priceLabel={order.products.length ? "Valor dos serviços (R$)" : "Valor (R$)"} onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
                     <PaymentFields method={order.payment_method} details={order.payment_details} onChange={(payment_method, payment_details) => setOrder(current => ({ ...current, payment_method, payment_details }))} />
                     <div className="sm:col-span-2">
                         <label

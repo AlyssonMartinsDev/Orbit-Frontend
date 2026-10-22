@@ -81,9 +81,8 @@ test('edição de OS salva campos personalizados e aceita booleano obrigatório 
     await page.getByLabel('Título *').fill('Título atualizado');
     await page.getByRole('button', { name: 'Atualizar ordem' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
-    expect(calls).toHaveLength(2);
-    expect(calls[0]).toMatchObject({ path: '/work_orders/1', data: { title: 'Título atualizado' } });
-    expect(calls[1]).toEqual({ path: '/custom-fields/1/custom-fields', data: { values: [{ field_definition_id: 1, value: 'false' }] } });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ path: '/work_orders/1', data: { title: 'Título atualizado', custom_values: { values: [{ field_definition_id: 1, value: 'false' }] } } });
 });
 
 test('busca mais recente prevalece sobre resposta atrasada', async ({ page }) => {
@@ -119,15 +118,15 @@ test('listagem permite recuperar falha de rede', async ({ page }) => {
     await expect(page.getByRole('cell', { name: 'Cliente de teste', exact: true })).toBeVisible();
 });
 
-test('falha nos campos personalizados informa salvamento parcial sem sair do formulário', async ({ page }) => {
+test('falha nos campos personalizados impede salvar a OS e mantém o formulário', async ({ page }) => {
     await mockApi(page, async (route, path) => {
-        if (path !== '/custom-fields/1/custom-fields') return false;
+        if (path !== '/work_orders/1' || route.request().method() !== 'PUT') return false;
         await route.fulfill({ status: 422, json: { success: false, message: 'Campo inválido' } });
         return true;
     });
     await page.goto('/work-orders/1/edit');
     await page.getByRole('button', { name: 'Atualizar ordem' }).click();
-    await expect(page.getByText(/Dados principais salvos, mas os campos personalizados/)).toBeVisible();
+    await expect(page.getByText('Campo inválido', { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/\/work-orders\/1\/edit$/);
     await expect(page.getByRole('button', { name: 'Atualizar ordem' })).toBeEnabled();
 });
