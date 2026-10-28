@@ -2,7 +2,7 @@
 
 Aplicação React, TypeScript e Vite para clientes, orçamentos, ordens de serviço e configurações.
 
-Versão **1.0.0**, primeiro marco formal do produto. Veja o [fechamento da etapa](CHANGELOG.md) e a [política de versionamento](VERSIONAMENTO.md).
+Versão **1.2.0-rc.1**, candidata à homologação externa. Veja o [fechamento da etapa](CHANGELOG.md) e a [política de versionamento](VERSIONAMENTO.md).
 
 ## Desenvolvimento
 
@@ -123,3 +123,8 @@ PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:settings
 ```
 
 Esse comando usa o backend irmão em `../backend`, inicia servidores nas portas 4176 e 8002 e cria um banco SQLite temporário. Não usa o banco configurado no `.env` nem modifica os cadastros reais. Não execute as duas suítes de navegador simultaneamente.
+
+
+## Manual operacional
+
+Consulte o [índice da documentação do Orbit](../backend/docs/README.md), o [guia de SMTP](../backend/docs/operacao/smtp.md) e os [procedimentos de backup e restauração](../backend/docs/operacao/backup-restauracao.md).

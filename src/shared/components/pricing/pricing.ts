@@ -20,8 +20,8 @@ export function lineAmount(item: LineItem): string | null {
   const cents = lineCents(item);
   return cents === null ? null : decimal(cents);
 }
-export function itemsTotal(items: LineItem[]): string | null {
-  if (!items.length || items.length > 100) return null;
+export function itemsTotal(items: LineItem[], allowEmpty = false): string | null {
+  if ((!items.length && !allowEmpty) || items.length > 100) return null;
   let sum = 0n;
   for (const item of items) {
     const cents = lineCents(item);
@@ -39,4 +39,31 @@ export function sumAmounts(amounts: string[]): string | null {
     total += cents;
   }
   return total > 9999999999n ? null : decimal(total);
+}
+
+interface PricingDocument {
+  pricing_mode?: PricingMode;
+  items?: LineItem[];
+  price: string;
+  service_price?: string | null;
+  title?: string;
+  products?: Pick<LineItem, "quantity" | "unit_price">[];
+}
+
+/** Convert legacy global amounts only in the editing draft; never rewrite stored documents. */
+export function itemizedDraft(document?: PricingDocument) {
+  let items = document?.items?.map(item => ({ ...item })) ?? [];
+  if (document && document.pricing_mode !== "ITEMIZED") {
+    let amount = document.service_price;
+    if (amount == null) {
+      const grand = scaled(document.price, 2);
+      const products = itemsTotal((document.products ?? []).map(item => ({ ...item, description: "" })), true);
+      const productCents = products === null ? null : scaled(products, 2);
+      amount = grand !== null && productCents !== null && grand >= productCents ? decimal(grand - productCents) : "";
+    }
+    items = amount === "" || Number(amount) > 0 || !document.products?.length
+      ? [{ kind: "SERVICE", description: document.title?.trim().slice(0, 500) || "Serviço", quantity: "1", unit_price: amount }]
+      : [];
+  }
+  return { pricing_mode: "ITEMIZED" as const, items, price: itemsTotal(items, true) ?? "" };
 }

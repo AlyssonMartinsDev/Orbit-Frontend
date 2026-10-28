@@ -17,8 +17,10 @@ async function create(page, clientId, paymentMethod, paymentDetails) {
     await page.getByRole('link', { name: 'Novo orçamento', exact: true }).click();
     await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
     await page.getByLabel('Título do orçamento', { exact: false }).fill('Revisão completa');
-    await page.getByLabel('Descrição do serviço', { exact: false }).fill('Revisar motor e substituir filtros.');
-    await page.getByLabel('Valor do orçamento (R$)', { exact: false }).fill('1234.56');
+    await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+    await page.getByLabel('Descrição do item 1', { exact: true }).fill('Serviço realizado');
+    await page.getByLabel('Valor unitário do item 1 (R$)', { exact: false }).fill('1234.56');
     await page.getByLabel('Válido até', { exact: true }).fill('2099-12-31');
     await page.getByLabel('Condições e observações').fill('Prazo de execução: 5 dias.');
     if (paymentMethod !== undefined) await page.getByLabel('Método de pagamento', { exact: true }).selectOption(paymentMethod);
@@ -53,8 +55,10 @@ for (const module of ['quote', 'order']) {
             await page.goto('/work-orders/create');
             await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
             await page.getByLabel('Título *').fill('Pagamento detalhado');
-            await page.getByLabel('Descrição do serviço', { exact: true }).fill('Serviço');
-            await page.getByLabel('Valor (R$)', { exact: false }).fill('100');
+            await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+            await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+            await page.getByLabel('Descrição do item 1', { exact: true }).fill('Serviço realizado');
+            await page.getByLabel('Valor unitário do item 1 (R$)', { exact: false }).fill('100');
             await page.getByLabel('Método de pagamento', { exact: true }).selectOption('PIX');
             await fillPaymentDetails(page, initial);
             const created = page.waitForResponse(r => r.url() === `${API}/work_orders/` && r.request().method() === 'POST');
@@ -117,8 +121,10 @@ test('método de pagamento da OS permite selecionar, alterar e limpar sem quitar
     await page.goto('/work-orders/create');
     await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
     await page.getByLabel('Título *').fill('OS com método');
-    await page.getByLabel('Descrição do serviço', { exact: true }).fill('Serviço livre');
-    await page.getByLabel('Valor (R$)', { exact: false }).fill('100');
+    await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+    await page.getByLabel('Descrição do item 1', { exact: true }).fill('Serviço realizado');
+    await page.getByLabel('Valor unitário do item 1 (R$)', { exact: false }).fill('100');
     const select = page.getByLabel('Método de pagamento', { exact: true });
     await expect(select).toHaveValue('');
     await expect(select.locator('option')).toHaveCount(8);
@@ -147,7 +153,7 @@ for (const width of [320, 1440]) {
         const { headers, clientId } = await setup(page, request);
         const id = await create(page, clientId);
         await page.getByRole('button', { name: 'Editar orçamento', exact: true }).click();
-        await page.getByLabel('Valor do orçamento (R$)', { exact: false }).fill('1450.75');
+        await page.getByLabel('Valor unitário do item 1 (R$)', { exact: false }).fill('1450.75');
         await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
         await expect(page.getByRole('region', { name: 'Produtos e Serviços', exact: true }).locator('strong')).toHaveText(/R\$\s*1.450,75/);
         const download = page.waitForEvent('download');

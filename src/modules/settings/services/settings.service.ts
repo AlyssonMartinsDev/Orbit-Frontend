@@ -1,7 +1,9 @@
+import type { PdfPreferences } from "../types/pdf-settings.types";
 import { api } from "../../../shared/services/api";
 import type { ApiResponse } from "../../../shared/types/api.types";
 import type {
   AccountUser,
+  AccountProfile,
   Organization,
   OrganizationData,
   NewUser,
@@ -36,6 +38,12 @@ function data<T>(response: ApiResponse<T>): T {
   return value;
 }
 export const SettingsService = {
+  async pdfPreferences(signal?: AbortSignal) {
+    return data((await api.get<ApiResponse<PdfPreferences>>("/organizations/me/pdf-settings", { signal })).data);
+  },
+  async updatePdfPreferences(payload: PdfPreferences) {
+    return data((await api.put<ApiResponse<PdfPreferences>>("/organizations/me/pdf-settings", payload)).data);
+  },
   async provisionOrganization(payload: ProvisionOrganization) {
     return data(
       (
@@ -48,13 +56,19 @@ export const SettingsService = {
   },
   async profile(signal?: AbortSignal) {
     return data(
-      (await api.get<ApiResponse<AccountUser>>("/users/me", { signal })).data,
+      (await api.get<ApiResponse<AccountProfile>>("/users/me", { signal })).data,
     );
   },
   async updateProfile(payload: Pick<AccountUser, "name" | "email">) {
     return data(
-      (await api.patch<ApiResponse<AccountUser>>("/users/me", payload)).data,
+      (await api.patch<ApiResponse<AccountProfile>>("/users/me", payload)).data,
     );
+  },
+  async uploadAvatar(data_url: string) {
+    return data((await api.put<ApiResponse<AccountProfile>>("/users/me/avatar", { data_url })).data);
+  },
+  async removeAvatar() {
+    return data((await api.delete<ApiResponse<AccountProfile>>("/users/me/avatar")).data);
   },
   async changePassword(payload: {
     current_password: string;

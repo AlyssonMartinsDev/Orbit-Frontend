@@ -22,12 +22,13 @@ export interface QuoteData {
   items?: LineItem[];
   client_id: number;
   title: string;
-  description: string;
+  description?: string | null;
   price: string;
   valid_until: string | null;
   terms: string | null;
 }
 export interface Quote extends QuoteData {
+  description: string | null;
   payment_details: PaymentDetails | null;
   payment_method: PaymentMethod | null;
   custom_values: (WorkOrderCustomValueRequest & { field_definition: CustomFieldDefinitionSimpleResponse })[];

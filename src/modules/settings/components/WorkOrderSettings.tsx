@@ -109,8 +109,8 @@ export function WorkOrderSettings() {
               <button
                 type="button"
                 key={section.title}
-                disabled={section.title !== "Campos personalizados"}
-                onClick={() => navigate("/settings/custom-fields")}
+                disabled={section.title === "Numeração das ordens"}
+                onClick={() => navigate(section.title === "Configurações de PDF" ? "/settings/pdf" : "/settings/custom-fields")}
                 className="
                   group
                   flex w-full items-center justify-between
@@ -147,7 +147,7 @@ export function WorkOrderSettings() {
                         text-[#f8fafc]
                       "
                     >
-                      {section.title}{section.title !== "Campos personalizados" && <span className="ml-2 text-xs text-[#a7b4c8]">Em breve</span>}
+                      {section.title}{section.title === "Numeração das ordens" && <span className="ml-2 text-xs text-[#a7b4c8]">Em breve</span>}
                     </p>
 
                     <p

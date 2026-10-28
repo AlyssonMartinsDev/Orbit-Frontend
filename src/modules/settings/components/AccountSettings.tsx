@@ -10,6 +10,7 @@ import { useSettings } from "../hooks/settings-context";
 import { useSettingsMutation } from "../hooks/useSettingsMutation";
 import { SettingsService } from "../services/settings.service";
 import { SettingsField, SaveError } from "./SettingsField";
+import { SettingsImageUpload } from "./SettingsImageUpload";
 import { roleLabels } from "../types/settings.types";
 
 export function AccountSettings() {
@@ -23,10 +24,21 @@ export function AccountSettings() {
                     proteja sua conta.
                 </p>
             </div>
-            <ProfileForm key={`${profile.id}-${profile.updated_at}`} />
+            <ProfilePhoto key={`photo-${profile.id}`} />
+            <ProfileForm key={`profile-${profile.id}`} />
             <PasswordForm />
         </div>
     );
+}
+function ProfilePhoto() {
+    const { profile, refreshProfile } = useSettings();
+    const [avatar, setAvatar] = useState(profile.avatar_url);
+    return <FormSection title="Foto de perfil">
+        <SettingsImageUpload kind="avatar" value={avatar}
+            upload={async dataUrl => (await SettingsService.uploadAvatar(dataUrl)).avatar_url}
+            remove={async () => (await SettingsService.removeAvatar()).avatar_url}
+            onSaved={value => { setAvatar(value); refreshProfile(); }} />
+    </FormSection>;
 }
 function ProfileForm() {
     const { profile, refreshProfile } = useSettings();

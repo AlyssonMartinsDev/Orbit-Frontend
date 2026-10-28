@@ -134,7 +134,7 @@ test("troca de conta limpa o cache e consulta os clientes com o novo token", asy
     api.defaults.adapter = async (config) => {
         requests++;
         assert.equal(config.headers.get("Authorization"), "Bearer account-b");
-        return response(config, { success: true, data: [{ id: 2, name: "Conta B" }] });
+        return response(config, { success: true, data: clientPage([{ id: 2, name: "Conta B" }]) });
     };
     await clients.getState().loadClients();
     await clients.getState().loadClients();
@@ -153,7 +153,7 @@ test("respostas antigas não repovoam caches nem encerram o carregamento da nova
     await Promise.all(oldLoads);
     assertEmptyCaches();
     for (const store of [clients, fields, dashboard]) assert.equal(store.getState().isLoading, true);
-    newPending[0].resolve({ success: true, data: [{ id: 2 }] });
+    newPending[0].resolve({ success: true, data: clientPage([{ id: 2 }]) });
     newPending[1].resolve({ success: true, data: [{ id: 2, display_order: 0 }] });
     newPending[2].resolve({ success: true, data: { account: "B" } });
     await Promise.all(newLoads);
@@ -275,11 +275,11 @@ test("erros de negócio e rede da sessão atual mantêm seu comportamento", asyn
 test("requisições concorrentes da mesma sessão preservam a mais recente", async () => {
     await loginAs("A");
     const requests = queueRequests();
-    const older = clients.getState().loadClients(true);
-    const newer = clients.getState().loadClients(true);
-    requests[1].resolve({ success: true, data: [{ id: 2, name: "Novo" }] });
+    const older = clients.getState().loadClients({}, true);
+    const newer = clients.getState().loadClients({}, true);
+    requests[1].resolve({ success: true, data: clientPage([{ id: 2, name: "Novo" }]) });
     await newer;
-    requests[0].resolve({ success: true, data: [{ id: 1, name: "Antigo" }] });
+    requests[0].resolve({ success: true, data: clientPage([{ id: 1, name: "Antigo" }]) });
     await older;
     assert.equal(clients.getState().clients[0].name, "Novo");
     assert.equal(clients.getState().isLoading, false);
@@ -288,9 +288,9 @@ test("requisições concorrentes da mesma sessão preservam a mais recente", asy
 test("mutação invalida listagem pendente sem ressuscitar cliente excluído", async () => {
     await loginAs("A");
     const requests = queueRequests();
-    const loading = clients.getState().loadClients(true);
+    const loading = clients.getState().loadClients({}, true);
     clients.getState().removeClient(1);
-    requests[0].resolve({ success: true, data: [{ id: 1, name: "Excluído" }] });
+    requests[0].resolve({ success: true, data: clientPage([{ id: 1, name: "Excluído" }]) });
     await loading;
     assert.deepEqual(clients.getState().clients, []);
     assert.equal(clients.getState().isLoading, false);
@@ -340,3 +340,5 @@ test("formatadores toleram datas inválidas e preservam dias sem horário", asyn
     assert.equal(formatDateTime(null), "—");
     assert.equal(formatCurrency("invalid"), "—");
 });
+
+function clientPage(items) { return { items, total: items.length, page: 1, page_size: 20, total_pages: 1 }; }

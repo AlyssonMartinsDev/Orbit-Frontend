@@ -41,6 +41,7 @@ export async function mockApi(page, handler) {
         else if (path === '/custom-fields') data = [field];
         else if (path.endsWith('/custom-fields')) data = [];
         else if (/\/clients\/1/.test(path)) data = { ...client, summary: { total_work_orders: 1, open_work_orders: 1, finished_work_orders: 0, total_services_value: 150 }, work_orders: [order] };
+        else if (path === '/clients/paginated') data = { items: [client], page: 1, page_size: 20, total: 1, total_pages: 1 };
         else if (path === '/clients/') data = req.method() === 'POST' ? { ...client, ...req.postDataJSON() } : [client];
         else if (/\/work_orders\/\d+\/attachments$/.test(path)) data = { items: [], can_delete: true, total_bytes: 0, max_files: 30, max_file_bytes: 10485760, max_total_bytes: 104857600 };
         else if (path.startsWith('/work_orders/')) data = order;

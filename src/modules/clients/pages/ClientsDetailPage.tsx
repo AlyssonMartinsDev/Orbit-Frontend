@@ -1322,7 +1322,7 @@ export function ClientDetailsPage() {
                                 text-[#8290a8]
                             "
                         >
-                            Valor em serviços
+                            Valor histórico das ordens
                         </p>
 
 

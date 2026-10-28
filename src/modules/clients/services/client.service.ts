@@ -1,10 +1,13 @@
 import { api } from "../../../shared/services/api";
 import type { ApiResponse } from "../../../shared/types/api.types";
-import type { CreateClientRequest, UpdateClientRequest, ClientResponse, ClientDetailsResponse } from "../types/client.types";
+import type { ClientPage, ClientQuery, CreateClientRequest, UpdateClientRequest, ClientResponse, ClientDetailsResponse } from "../types/client.types";
 
 export class ClientService {
-    static async getAll(signal?: AbortSignal): Promise<ApiResponse<ClientResponse[]>> {
-        return (await api.get<ApiResponse<ClientResponse[]>>("/clients/", { signal })).data;
+    static async list(params: ClientQuery = {}, signal?: AbortSignal): Promise<ApiResponse<ClientPage>> {
+        return (await api.get<ApiResponse<ClientPage>>("/clients/paginated", { params, signal })).data;
+    }
+    static async getById(id: number, signal?: AbortSignal): Promise<ApiResponse<ClientResponse>> {
+        return (await api.get<ApiResponse<ClientResponse>>(`/clients/${id}`, { signal })).data;
     }
     static async create(client: CreateClientRequest): Promise<ApiResponse<ClientResponse>> {
         return (await api.post<ApiResponse<ClientResponse>>("/clients/", client)).data;

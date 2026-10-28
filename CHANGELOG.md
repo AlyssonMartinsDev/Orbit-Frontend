@@ -4,7 +4,20 @@ O produto segue a [política de versionamento](VERSIONAMENTO.md). Este arquivo r
 
 ## Não lançado
 
-Próxima etapa aberta, ainda sem alterações ou versão definida.
+Nenhuma alteração posterior à candidata abaixo.
+
+## 1.2.0-rc.1 — 2026-10-28
+
+Candidata compatível com a API 1.2.0-rc.1. Publicação em develop; homologação externa e liberação para produção pendentes.
+
+- Recuperação de senha por e-mail e apresentação dos bloqueios temporários de login.
+- Paginação, busca de clientes no servidor e seletor compartilhado que preserva clientes fora da página atual.
+- Configuração de três modelos de PDF e padrão do nome do arquivo; envio de foto de perfil e logo corrigido.
+- Novos documentos sempre detalhados por itens, preservando descrições e valores únicos históricos.
+- Correções de validação, concorrência de requisições, isolamento de sessões e responsividade.
+- Suíte de homologação com frontend compilado, API e PostgreSQL reais, fluxos em 320/1440 px e bloqueio na quinta falha.
+
+Publicar com a cadeia de migrations do backend aplicada. Os testes locais não substituem o aceite na hospedagem.
 
 ## 1.1.0 — 2026-10-22
 

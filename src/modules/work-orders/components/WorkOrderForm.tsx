@@ -1,6 +1,6 @@
 import { DocumentItemsEditor } from "../../../shared/components/pricing/DocumentItemsEditor";
-import { productPayload, productsTotal, type DocumentProduct } from "../../inventory/types/document-product.types";
-import { itemsTotal, sumAmounts, type LineItem, type PricingMode } from "../../../shared/components/pricing/pricing";
+import { productPayload, productsTotal } from "../../inventory/types/document-product.types";
+import { itemizedDraft, itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
 import { useEffect, useId, useRef, useState } from "react";
 import { PaymentFields } from "../../../shared/components/form/PaymentFields";
 import { Link, useNavigate } from "react-router-dom";
@@ -16,6 +16,7 @@ import {
 import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
 import { appliesTo } from "../../custom-fields/types/custom-field.types";
+import { ClientSelect } from "../../clients/components/ClientSelect";
 import { useClientStore } from "../../../shared/store/client.store";
 import { useCustomFieldStore } from "../../../shared/store/custom-field.store";
 import { useMessageStore } from "../../../shared/store/message.store";
@@ -51,16 +52,14 @@ export function WorkOrderForm({
         email: "",
         notes: "",
     });
+    const [clientCustomValues, setClientCustomValues] = useState<Record<number, string>>({});
     const createRequest = useRef<{ fingerprint: string; id: string } | null>(null);
     const [order, setOrder] = useState(() => ({
         payment_method: workOrder?.payment_method ?? null,
         payment_details: workOrder?.payment_details ?? null,
         title: workOrder?.title ?? "",
-        description: workOrder?.description ?? "",
-        price: workOrder?.service_price ?? workOrder?.price ?? "0",
-        products: workOrder?.products ?? ([] as DocumentProduct[]),
-        pricing_mode: workOrder?.pricing_mode ?? ("SIMPLE" as PricingMode),
-        items: workOrder?.items ?? ([] as LineItem[]),
+        ...itemizedDraft(workOrder),
+        products: workOrder?.products ?? [],
         status_service:
             workOrder?.status_service ?? ("EM_ANDAMENTO" as WorkOrderStatus),
     }));
@@ -74,12 +73,6 @@ export function WorkOrderForm({
             ),
     );
     const {
-        clients,
-        isLoaded: clientsLoaded,
-        error: clientsError,
-        loadClients,
-    } = useClientStore();
-    const {
         customFields,
         isLoaded: fieldsLoaded,
         isLoading: fieldsLoading,
@@ -88,15 +81,15 @@ export function WorkOrderForm({
     } = useCustomFieldStore();
     const showMessage = useMessageStore((state) => state.showMessage);
     useEffect(() => {
-        if (mode === "create") void loadClients();
         void loadCustomFields(true);
-    }, [mode, loadClients, loadCustomFields]);
+    }, [loadCustomFields]);
     const fields = customFields.filter(
         (field) => appliesTo(field.module, "WORK_ORDER") && field.active,
     );
+    const clientFields = customFields.filter(field => field.module === "CLIENT" && field.active);
     const ready =
         fieldsLoaded && !fieldsLoading && !fieldsError &&
-        (mode === "edit" || clientMode === "new" || clientsLoaded);
+        (mode === "edit" || clientMode === "new" || !!clientId);
     const changeClient = (key: keyof typeof client, value: string) =>
         setClient((current) => ({ ...current, [key]: value }));
 
@@ -104,7 +97,8 @@ export function WorkOrderForm({
         event.preventDefault();
         if (submitting.current || !ready || !isCurrentSession(sessionId))
             return;
-        const computed = order.pricing_mode === "ITEMIZED" ? itemsTotal(order.items) : order.price;
+        if (!order.items.length && !order.products.length) { showMessage("Adicione pelo menos um produto ou serviço.", "error"); return; }
+        const computed = itemsTotal(order.items, true);
         const price = computed ?? "";
         const productSum = productsTotal(order.products);
         if (productSum === null || sumAmounts([price, productSum]) === null) { showMessage("Confira os valores dos serviços e produtos. O total máximo é R$ 99.999.999,99.", "error"); return; }
@@ -113,10 +107,10 @@ export function WorkOrderForm({
             !Number.isFinite(Number(price)) ||
             Number(price) < 0 ||
             price.trim() === "" ||
-            (order.pricing_mode === "ITEMIZED" && order.items.some(item => !item.description.trim()))
+            order.items.some(item => !item.description.trim())
         ) {
             showMessage(
-                "Preencha o título e um valor válido para o serviço.",
+                "Preencha o título, a descrição e os valores dos itens.",
                 "error",
             );
             return;
@@ -137,11 +131,10 @@ export function WorkOrderForm({
         const workOrderPayload = {
             ...order,
             title: order.title.trim(),
-            description: order.description.trim(),
             price,
             service_price: price,
             products: productPayload(order.products),
-            items: order.pricing_mode === "ITEMIZED" ? order.items : [],
+            items: order.items,
             ...(mode === "edit" ? { pricing_version: workOrder?.pricing_version ?? 0 } : {}),
         };
         const payload: CreateWorkOrderRequest = {
@@ -153,6 +146,7 @@ export function WorkOrderForm({
                           name: client.name.trim(),
                           email: client.email.trim() || undefined,
                           notes: client.notes.trim() || undefined,
+                          custom_values: clientFields.map(field => ({ field_definition_id: field.id, value: clientCustomValues[field.id]?.trim() || null })),
                       },
             work_order: workOrderPayload,
             custom_values: { values },
@@ -247,50 +241,7 @@ export function WorkOrderForm({
                             </div>
                             {clientMode === "existing" ? (
                                 <div className="sm:col-span-2">
-                                    {clientsError && (
-                                        <RequestError
-                                            message={clientsError}
-                                            onRetry={() =>
-                                                void loadClients(true)
-                                            }
-                                        />
-                                    )}
-                                    <label
-                                        htmlFor={`${formId}-client`}
-                                        className="mb-2 block text-sm text-[#a7b4c8]"
-                                    >
-                                        Cliente *
-                                    </label>
-                                    <select
-                                        id={`${formId}-client`}
-                                        required
-                                        disabled={!clientsLoaded}
-                                        value={clientId}
-                                        onChange={(event) =>
-                                            setClientId(event.target.value)
-                                        }
-                                        className={inputClass}
-                                    >
-                                        <option value="">
-                                            {clientsLoaded
-                                                ? "Selecione um cliente"
-                                                : "Carregando clientes…"}
-                                        </option>
-                                        {clients.map((item) => (
-                                            <option
-                                                key={item.id}
-                                                value={item.id}
-                                            >
-                                                {item.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {clientsLoaded && clients.length === 0 && (
-                                        <p className="mt-2 text-sm text-[#a7b4c8]">
-                                            Nenhum cliente cadastrado. Use a
-                                            opção “Cadastrar novo cliente”.
-                                        </p>
-                                    )}
+                                    <ClientSelect value={Number(clientId)} onChange={value => setClientId(value ? String(value) : "")} />
                                 </div>
                             ) : (
                                 <>
@@ -303,6 +254,7 @@ export function WorkOrderForm({
                                         </label>
                                         <input
                                             id={`${formId}-name`}
+                            maxLength={255}
                                             required
                                             autoComplete="name"
                                             value={client.name}
@@ -342,6 +294,7 @@ export function WorkOrderForm({
                                         </label>
                                         <input
                                             id={`${formId}-email`}
+                            maxLength={255}
                                             type="email"
                                             autoComplete="email"
                                             value={client.email}
@@ -363,6 +316,7 @@ export function WorkOrderForm({
                                         </label>
                                         <input
                                             id={`${formId}-notes`}
+                            maxLength={255}
                                             value={client.notes}
                                             onChange={(event) =>
                                                 changeClient(
@@ -373,6 +327,15 @@ export function WorkOrderForm({
                                             className={inputClass}
                                         />
                                     </div>
+                                    {clientFields.map(field => (
+                                        <CustomFieldInput
+                                            key={field.id}
+                                            field={field}
+                                            id={`${formId}-client-custom-${field.id}`}
+                                            value={clientCustomValues[field.id] ?? ""}
+                                            onChange={value => setClientCustomValues(current => ({ ...current, [field.id]: value }))}
+                                        />
+                                    ))}
                                 </>
                             )}
                         </>
@@ -388,6 +351,7 @@ export function WorkOrderForm({
                         </label>
                         <input
                             id={`${formId}-title`}
+                            maxLength={255}
                             required
                             value={order.title}
                             onChange={(event) =>
@@ -431,28 +395,8 @@ export function WorkOrderForm({
                     <p className="text-sm leading-6 text-[#a7b4c8]">
                         O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
                     </p>
-                    <div className="sm:col-span-2"><DocumentItemsEditor pricing_mode={order.pricing_mode} items={order.items} price={order.price} products={order.products} priceLabel={order.products.length ? "Valor dos serviços (R$)" : "Valor (R$)"} onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
+                    <div className="sm:col-span-2"><DocumentItemsEditor items={order.items} products={order.products} onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
                     <PaymentFields method={order.payment_method} details={order.payment_details} onChange={(payment_method, payment_details) => setOrder(current => ({ ...current, payment_method, payment_details }))} />
-                    <div className="sm:col-span-2">
-                        <label
-                            htmlFor={`${formId}-description`}
-                            className="mb-2 block text-sm text-[#a7b4c8]"
-                        >
-                            Descrição do serviço
-                        </label>
-                        <textarea
-                            id={`${formId}-description`}
-                            rows={5}
-                            value={order.description}
-                            onChange={(event) =>
-                                setOrder((current) => ({
-                                    ...current,
-                                    description: event.target.value,
-                                }))
-                            }
-                            className={inputClass}
-                        />
-                    </div>
                 </FormSection>
                 {fieldsError && (
                     <RequestError

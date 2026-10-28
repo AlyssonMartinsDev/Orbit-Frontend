@@ -10,7 +10,7 @@ async function setup(page, request) {
     return { headers, clientId };
 }
 async function fillItems(page) {
-    await page.getByRole('radio', { name: 'Detalhar itens', exact: true }).check();
+    await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
     await page.getByLabel('Descrição do item 1', { exact: true }).fill('Mão de obra');
     await page.getByLabel('Quantidade do item 1', { exact: true }).fill('1.5');
     await page.getByLabel('Valor unitário do item 1 (R$)', { exact: true }).fill('100.01');
@@ -22,14 +22,14 @@ async function fillItems(page) {
 }
 test.beforeEach(async ({ request }) => { expect((await request.post(`${API}/__test__/reset`)).ok()).toBe(true); });
 for (const width of [320, 1440]) {
-    test(`OS com itens, edição e retorno ao valor único em ${width}px`, async ({ page, request }, info) => {
+    test(`OS sempre detalhada, edição e serviço com preço fechado em ${width}px`, async ({ page, request }, info) => {
         await page.setViewportSize({ width, height: 900 });
         const { headers, clientId } = await setup(page, request);
         await page.goto('/work-orders/create');
         await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
         await page.getByLabel('Título *', { exact: true }).fill('Revisão de motor');
-        await page.getByLabel('Descrição do serviço', { exact: true }).fill('Descrição livre mantida');
-        await expect(page.getByRole('radio', { name: 'Valor único', exact: true })).toBeChecked();
+        await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+        await expect(page.getByRole('radio', { name: /Valor único|Detalhar itens/ })).toHaveCount(0);
         await fillItems(page);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await page.evaluate(() => window.scrollTo(0, 0));
@@ -47,21 +47,21 @@ for (const width of [320, 1440]) {
         await page.getByRole('button', { name: 'Exportar PDF', exact: true }).click();
         expect((await download).suggestedFilename()).toBe(`ordem-de-servico-${id}.pdf`);
         await page.goto(`/work-orders/${id}/edit`);
-        await expect(page.getByRole('radio', { name: 'Detalhar itens', exact: true })).toBeChecked();
+        await expect(page.getByLabel('Descrição do item 1', { exact: true })).toHaveValue('Mão de obra');
         await page.getByRole('button', { name: 'Remover item 2', exact: true }).click();
         await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
         await expect(page).toHaveURL(/\/dashboard$/);
         await page.goto(`/work-orders/${id}/edit`);
-        await page.getByRole('radio', { name: 'Valor único', exact: true }).check();
-        await expect(page.getByLabel('Valor (R$)', { exact: false })).toHaveValue('150.02');
-        await page.getByLabel('Valor (R$)', { exact: false }).fill('180');
+        await expect(page.getByLabel('Quantidade do item 1', { exact: true })).toHaveValue('1.5');
+        await page.getByLabel('Quantidade do item 1', { exact: true }).fill('1');
+        await page.getByLabel('Valor unitário do item 1 (R$)', { exact: true }).fill('180');
         await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
         await expect(page).toHaveURL(/\/dashboard$/);
         const saved = (await (await request.get(`${API}/work_orders/${id}`, { headers })).json()).data;
-        expect(saved.items).toEqual([]);
-        expect(saved.pricing_mode).toBe('SIMPLE');
+        expect(saved.items).toEqual([{ description: 'Mão de obra', quantity: '1', unit_price: '180' }]);
+        expect(saved.pricing_mode).toBe('ITEMIZED');
         expect(saved.price).toBe('180.00');
-        expect(saved.description).toBe('Descrição livre mantida');
+        expect(saved.description).toBeNull();
     });
 }
 test('orçamento com itens preserva detalhamento na conversão', async ({ page, request }) => {
@@ -69,14 +69,14 @@ test('orçamento com itens preserva detalhamento na conversão', async ({ page, 
     await page.goto('/quotes/create');
     await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
     await page.getByLabel('Título do orçamento', { exact: false }).fill('Revisão completa');
-    await page.getByLabel('Descrição do serviço', { exact: false }).fill('Serviço livre com detalhamento opcional');
+    await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
     await fillItems(page);
     await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
     await expect(page).toHaveURL(/\/quotes\/\d+$/);
     const id = Number(page.url().split('/').pop());
     await expect(page.getByRole('region', { name: 'Produtos e Serviços' })).toContainText('Peça de reposição');
     await page.getByRole('button', { name: 'Editar orçamento', exact: true }).click();
-    await expect(page.getByRole('radio', { name: 'Detalhar itens', exact: true })).toBeChecked();
+    await expect(page.getByLabel('Descrição do item 1', { exact: true })).toHaveValue('Mão de obra');
     await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
     await page.getByRole('button', { name: 'Registrar aprovação', exact: true }).click();
     await page.getByRole('button', { name: 'Confirmar alteração', exact: true }).click();
@@ -103,3 +103,40 @@ test('OS com pagamento impede redução do total pelos itens', async ({ page, re
     const saved = (await (await request.get(`${API}/work_orders/${id}`, { headers })).json()).data;
     expect(saved.price).toBe('100.00');
 });
+
+for (const kind of ['quote', 'order']) {
+    test(`descrição histórica de ${kind} permanece ao editar sem o campo antigo`, async ({ page, request }) => {
+        const { headers, clientId } = await setup(page, request);
+        const description = 'Descrição histórica preservada sem novo preenchimento.';
+        const fields = { title: 'Documento histórico', description, price: '100.00' };
+        const created = await request.post(`${API}/${kind === 'quote' ? 'quotes/' : 'work_orders/'}`, {
+            headers,
+            data: kind === 'quote' ? { ...fields, client_id: clientId, request_id: crypto.randomUUID() } : { client: { id: clientId }, work_order: fields },
+        });
+        expect(created.ok()).toBe(true);
+        const document = (await created.json()).data;
+        if (kind === 'quote') {
+            await page.goto(`/quotes/${document.id}`);
+            await expect(page.getByText(description, { exact: true })).toBeVisible();
+            await page.getByRole('button', { name: 'Editar orçamento', exact: true }).click();
+            await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+            await page.getByLabel('Título do orçamento', { exact: false }).fill('Título alterado');
+            await page.getByRole('button', { name: 'Salvar orçamento', exact: true }).click();
+            await expect(page.getByRole('form', { name: 'Editar orçamento' })).toHaveCount(0);
+        } else {
+            await page.goto(`/work-orders/${document.id}/edit`);
+            await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+            await page.getByLabel('Título *', { exact: true }).fill('Título alterado');
+            await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
+            await expect(page).toHaveURL(/\/dashboard$/);
+            await page.goto(`/work-orders/${document.id}/details`);
+        }
+        await expect(page.getByText(description, { exact: true })).toBeVisible();
+        const saved = await request.get(`${API}/${kind === 'quote' ? 'quotes' : 'work_orders'}/${document.id}`, { headers });
+        const result = (await saved.json()).data;
+        expect(result.description).toBe(description);
+        expect(result.price).toBe('100.00');
+        expect(result.pricing_mode).toBe('ITEMIZED');
+        expect(result.items).toEqual([{ description: 'Documento histórico', quantity: '1', unit_price: '100.00' }]);
+    });
+}

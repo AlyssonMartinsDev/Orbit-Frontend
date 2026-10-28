@@ -160,6 +160,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
                         </label>
                         <input
                             id={`${formId}-name`}
+                            maxLength={255}
                             autoComplete="name"
                             required
                             value={formData.name}
@@ -194,6 +195,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
                         </label>
                         <input
                             id={`${formId}-email`}
+                            maxLength={255}
                             type="email"
                             autoComplete="email"
                             value={formData.email ?? ""}
@@ -266,6 +268,7 @@ export function ClientForm({ mode = "create", client }: ClientFormProps) {
                         </label>
                         <textarea
                             id={`${formId}-notes`}
+                            maxLength={255}
                             rows={4}
                             value={formData.notes ?? ""}
                             onChange={(event) =>

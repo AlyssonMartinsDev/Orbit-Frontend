@@ -1134,7 +1134,7 @@ export function WorkOrderDetailsPage() {
                 DESCRIÇÃO
             ================================================= */}
 
-            <section
+            {workOrder.description?.trim() && <section
                 className="
                     mt-6
                     rounded-2xl
@@ -1220,13 +1220,12 @@ export function WorkOrderDetailsPage() {
                             text-[#a7b4c8]
                         "
                     >
-                        {workOrder.description ||
-                            "Nenhuma descrição informada."}
+                        {workOrder.description}
                     </p>
 
                 </div>
 
-            </section>
+            </section>}
 
 
             <DocumentItemsSummary items={workOrder.items ?? []} products={workOrder.products ?? []} servicePrice={workOrder.service_price ?? workOrder.price} total={workOrder.price} order />

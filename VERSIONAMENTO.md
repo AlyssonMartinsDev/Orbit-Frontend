@@ -10,6 +10,10 @@ O número representa o produto integrado. Os dois repositórios recebem a tag an
 
 Em 22/10/2026, o estoque e sua integração com documentos encerram uma evolução MINOR compatível. O card e os PDFs unificados preservam o modo de valor único e os registros anteriores. A versão conjunta é 1.1.0 e a tag anotada correspondente é `v1.1.0` em cada repositório; não há BREAKING CHANGE nem promoção automática para produção.
 
+## Candidata 1.2.0-rc.1
+
+Em 28/10/2026, configurações de PDF, recuperação de acesso, paginação de clientes e estabilização compõem uma evolução compatível. A tag anotada `v1.2.0-rc.1` marca a candidata em develop. A versão final depende de homologação na hospedagem; não há promoção automática para produção.
+
 ## Política
 
 Seguimos [Versionamento Semântico](https://semver.org/lang/pt-BR/):
@@ -48,5 +52,5 @@ PLAYWRIGHT_BROWSER_CHANNEL=chrome npx playwright test --config playwright.settin
 
 As duas suítes de navegador devem rodar em sequência. A suíte de integração depende do backend irmão e de suas dependências de desenvolvimento instaladas; usa banco e servidores descartáveis. Consulte [README](README.md) para detalhes.
 
-O frontend 1.1.0 deve ser usado com o backend 1.1.0 e suas migrações aplicadas. Publique primeiro a API compatível e depois o frontend. [Notas desta versão](CHANGELOG.md).
+O frontend 1.2.0-rc.1 deve ser usado com o backend 1.2.0-rc.1 e suas migrações aplicadas. Publique primeiro a API compatível e depois o frontend. [Notas desta versão](CHANGELOG.md).
 

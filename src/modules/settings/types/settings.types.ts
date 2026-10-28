@@ -12,6 +12,9 @@ export interface AccountUser {
   created_at: string;
   updated_at: string;
 }
+export interface AccountProfile extends AccountUser {
+  avatar_url: string | null;
+}
 export interface OrganizationData {
   address?: AddressInput | null;
   name: string;

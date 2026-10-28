@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   ArrowRight,
@@ -758,6 +758,9 @@ export function LoginPage() {
                     </>
                   )}
                 </button>
+                <Link to="/forgot-password" className="block py-2 text-center text-sm text-[#3692ff] hover:underline">
+                  Esqueci minha senha
+                </Link>
               </form>
             </div>
 

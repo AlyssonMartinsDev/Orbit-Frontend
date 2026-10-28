@@ -34,8 +34,10 @@ for (const width of [320, 1440]) {
         await page.goto('/quotes/create');
         await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
         await page.getByLabel('Título do orçamento', { exact: false }).fill('Manutenção com campos');
-        await page.getByLabel('Descrição do serviço', { exact: false }).fill('Revisão do equipamento');
-        await page.getByLabel('Valor do orçamento (R$)', { exact: false }).fill('150');
+        await expect(page.getByLabel('Descrição do serviço', { exact: false })).toHaveCount(0);
+        await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+        await page.getByLabel('Descrição do item 1', { exact: true }).fill('Serviço realizado');
+        await page.getByLabel('Valor unitário do item 1 (R$)', { exact: false }).fill('150');
         await expect(page.getByLabel('Diagnóstico técnico', { exact: false })).toHaveCount(0);
         await expect(page.getByLabel('Contato do cliente', { exact: false })).toHaveCount(0);
         await expect(page.getByLabel('Número de série', { exact: false })).toHaveAttribute('required', '');
@@ -82,12 +84,49 @@ for (const width of [320, 1440]) {
 }
 
 test('falha de carregamento bloqueia orçamento até tentar novamente', async ({ page, request }) => {
-    await setup(page, request);
+    const { clientId } = await setup(page, request);
     await page.route('**/custom-fields?**', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'Falha temporária de campos' }) }));
     await page.goto('/quotes/create');
+    await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
     await expect(page.getByRole('alert')).toContainText('Falha temporária de campos');
     await expect(page.getByRole('button', { name: 'Salvar orçamento', exact: true })).toBeDisabled();
     await page.unroute('**/custom-fields?**');
     await page.getByRole('button', { name: 'Tentar novamente', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Salvar orçamento', exact: true })).toBeEnabled();
 });
+
+for (const width of [320, 1440]) {
+    test(`cadastro rápido de cliente exige campo próprio e preserva conclusão em ${width}px`, async ({ page, request }) => {
+        await page.setViewportSize({ width, height: 900 });
+        const { headers } = await setup(page, request);
+        const field = await createField(request, headers, 'CLIENT', 'Contato obrigatório', { required: true });
+        await page.goto('/work-orders/create');
+        await page.getByRole('button', { name: 'Cadastrar novo cliente', exact: true }).click();
+        await page.getByLabel('Nome *', { exact: true }).fill('Cliente cadastro rápido');
+        await page.getByLabel('Telefone *', { exact: true }).fill('11912345678');
+        await expect(page.getByLabel('Nome *', { exact: true })).toHaveAttribute('maxlength', '255');
+        await expect(page.getByLabel('Observações do cliente', { exact: true })).toHaveAttribute('maxlength', '255');
+        await page.getByLabel('Título *', { exact: true }).fill('OS finalizada');
+        await expect(page.getByLabel('Título *', { exact: true })).toHaveAttribute('maxlength', '255');
+        await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+        await page.getByLabel('Descrição do item 1', { exact: true }).fill('Manutenção');
+        const required = page.getByLabel('Contato obrigatório', { exact: false });
+        await expect(required).toHaveAttribute('required', '');
+        await page.getByRole('button', { name: 'Salvar ordem', exact: true }).click();
+        await expect(page).toHaveURL(/\/work-orders\/create$/);
+        await required.fill('Financeiro');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await page.getByRole('button', { name: 'Salvar ordem', exact: true }).click();
+        await expect(page).toHaveURL(/\/dashboard$/);
+        const orders = (await (await request.get(`${API}/work_orders/`, { headers })).json()).data;
+        const order = orders[0];
+        const client = (await (await request.get(`${API}/clients/${order.client.id}`, { headers })).json()).data;
+        expect(client.custom_values).toContainEqual(expect.objectContaining({ field_definition_id: field.id, value: 'Financeiro' }));
+        await page.goto(`/work-orders/${order.id}/edit`);
+        await page.getByLabel('Status do serviço', { exact: false }).selectOption('FINALIZADO');
+        await page.getByRole('button', { name: 'Atualizar ordem', exact: true }).click();
+        await expect(page).toHaveURL(/\/dashboard$/);
+        const finished = (await (await request.get(`${API}/work_orders/${order.id}`, { headers })).json()).data;
+        expect(finished.finished_at).not.toBeNull();
+    });
+}
