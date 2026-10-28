@@ -4,17 +4,21 @@ import { getSession, isCurrentSession } from "../services/session";
 import { ClientService } from "../../modules/clients/services/client.service";
 import { requireResponseData } from "../types/api.types";
 import type {
-    ClientResponse,
+    ClientResponse, ClientSummary, ClientQuery,
     ClientDetailsResponse,
 } from "../../modules/clients/types/client.types";
 
 interface ClientState {
-    clients: ClientResponse[];
+    clients: ClientSummary[];
+    total: number;
+    page: number;
+    totalPages: number;
+    queryKey: string;
     selectedClient: ClientDetailsResponse | null;
     isLoading: boolean;
     isLoaded: boolean;
     error: string | null;
-    loadClients: (forceRefresh?: boolean) => Promise<void>;
+    loadClients: (query?: ClientQuery, forceRefresh?: boolean) => Promise<void>;
     addClient: (client: ClientResponse) => void;
     updateClient: (client: ClientResponse) => void;
     removeClient: (id: number) => void;
@@ -25,6 +29,7 @@ interface ClientState {
 let version = 0;
 const emptyState = {
     clients: [],
+    total: 0, page: 1, totalPages: 1, queryKey: "",
     selectedClient: null,
     isLoading: false,
     isLoaded: false,
@@ -33,16 +38,17 @@ const emptyState = {
 
 export const useClientStore = create<ClientState>((set, get) => ({
     ...emptyState,
-    loadClients: async (forceRefresh = false) => {
+    loadClients: async (query = {}, forceRefresh = false) => {
         const sessionId = getSession().id;
-        if (!forceRefresh && (get().isLoading || get().isLoaded)) return;
+        const queryKey = JSON.stringify(query);
+        if (!forceRefresh && queryKey === get().queryKey && (get().isLoading || get().isLoaded)) return;
         const requestVersion = ++version;
         const current = () =>
             isCurrentSession(sessionId) && requestVersion === version;
-        set({ isLoading: true, error: null });
+        set({ isLoading: true, error: null, queryKey });
         try {
-            const clients = requireResponseData(await ClientService.getAll());
-            if (current()) set({ clients, isLoaded: true });
+            const result = requireResponseData(await ClientService.list(query));
+            if (current()) set({ clients: result.items, total: result.total, page: result.page, totalPages: result.total_pages, isLoaded: true });
         } catch (error) {
             if (current() && !axios.isCancel(error))
                 set({
@@ -59,32 +65,20 @@ export const useClientStore = create<ClientState>((set, get) => ({
         version++;
         set(emptyState);
     },
-    addClient: (client) => {
+    addClient: () => {
         version++;
-        set((state) => ({
-            clients: [
-                client,
-                ...state.clients.filter((item) => item.id !== client.id),
-            ],
-            isLoading: false,
-        }));
+        set({ isLoaded: false, isLoading: false });
     },
-    updateClient: (client) => {
+    updateClient: () => {
         version++;
-        set((state) => ({
-            clients: state.clients.map((item) =>
-                item.id === client.id ? client : item,
-            ),
-            isLoading: false,
-        }));
+        set({ isLoaded: false, isLoading: false });
     },
     removeClient: (id) => {
         version++;
         set((state) => ({
             clients: state.clients.filter((item) => item.id !== id),
-            selectedClient:
-                state.selectedClient?.id === id ? null : state.selectedClient,
-            isLoading: false,
+            selectedClient: state.selectedClient?.id === id ? null : state.selectedClient,
+            isLoaded: false, isLoading: false,
         }));
     },
     setSelectedClient: (selectedClient) => set({ selectedClient }),

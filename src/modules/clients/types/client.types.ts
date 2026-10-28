@@ -46,3 +46,14 @@ export interface ClientDetailsResponse extends Omit<ClientResponse, "created_at"
     summary: ClientDetailsSummary;
     work_orders: ClientWorkOrder[];
 }
+
+
+export type ClientSummary = Pick<ClientResponse, "id" | "name" | "phone" | "email" | "cpf_cnpj">;
+export interface ClientPage {
+    items: ClientSummary[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+}
+export interface ClientQuery { page?: number; page_size?: number; search?: string }

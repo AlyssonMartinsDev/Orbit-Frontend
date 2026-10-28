@@ -1,10 +1,15 @@
+import { pdfFilename } from "./pdf-filename";
 import { api } from "./api";
 
 export async function fetchPdf(
   path: string,
   signal: AbortSignal,
-): Promise<Blob> {
-  const response = await api.get<unknown>(path, {
+  previewData?: unknown,
+): Promise<{ blob: Blob; filename: string | null }> {
+  const response = await api.request<unknown>({
+    url: path,
+    method: previewData === undefined ? "GET" : "POST",
+    data: previewData,
     responseType: "blob",
     headers: { Accept: "application/pdf" },
     timeout: 60_000,
@@ -29,7 +34,7 @@ export async function fetchPdf(
   ) {
     throw new Error("Não foi possível gerar o PDF. Tente novamente.");
   }
-  return response.data;
+  return { blob: response.data, filename: pdfFilename(response.headers["content-disposition"]) };
 }
 
 export function savePdf(blob: Blob, filename: string) {

@@ -14,6 +14,7 @@ import type {
 // ============================================================
 
 export interface WorkOrderClientRequest {
+    custom_values?: WorkOrderCustomValueRequest[];
     id?: number;
     name?: string;
     phone?: string;
@@ -61,7 +62,7 @@ export interface WorkOrderDataRequest {
     service_price?: string | null;
     products_total?: string;
     title: string;
-    description: string;
+    description?: string | null;
     status_service: WorkOrderStatus;
     price: number | string;
 }
@@ -160,7 +161,7 @@ export interface UpdateWorkOrderRequest {
     products_total?: string;
     pricing_version?: number;
     title?: string;
-    description?: string;
+    description?: string | null;
     status_service?: WorkOrderStatus;
     status_payment?: PaymentStatus;
     price?: number | string;
@@ -189,7 +190,7 @@ export interface WorkOrderResponse {
     user_id: number;
 
     title: string;
-    description: string;
+    description: string | null;
 
     status_service:
     WorkOrderStatus;

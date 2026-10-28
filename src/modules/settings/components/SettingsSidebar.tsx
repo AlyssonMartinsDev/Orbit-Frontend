@@ -1,6 +1,7 @@
 import { useSettings } from "../hooks/settings-context";
 import {
     Building2,
+    FileText,
     Users,
     ClipboardList,
     ShieldCheck,
@@ -12,6 +13,7 @@ import { NavLink } from "react-router-dom";
 
 
 const settingsItems = [
+    { label: "Documentos PDF", mobileLabel: "PDFs", description: "Modelos e nomes dos arquivos", to: "/settings/pdf", icon: FileText },
     {
         label: "Administração da plataforma",
         mobileLabel: "Plataforma",

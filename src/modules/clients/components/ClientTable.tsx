@@ -1,4 +1,5 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import {
@@ -23,43 +24,27 @@ import {
 } from "../../../shared/components/form/FormSection";
 import { formatPhone } from "../../../shared/utils/phone";
 import { ClientService } from "../services/client.service";
-import type { ClientResponse } from "../types/client.types";
+import type { ClientSummary } from "../types/client.types";
 
 const PAGE_SIZE = 20;
 const actionClass =
     "inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#16345c] p-3 hover:bg-[#0a2242] disabled:opacity-50";
 
 export function ClientTable() {
-    const { clients, isLoading, error, loadClients, removeClient } =
+    const { clients, total, page: currentPage, totalPages: pages, isLoading, error, loadClients, removeClient } =
         useClientStore();
     const showMessage = useMessageStore((state) => state.showMessage);
     const [sessionId] = useState(() => getSession().id);
     const [search, setSearch] = useState("");
-    const deferredSearch = useDeferredValue(search);
+    const deferredSearch = useDebouncedValue(search);
     const [page, setPage] = useState(1);
-    const [deleting, setDeleting] = useState<ClientResponse | null>(null);
+    const [deleting, setDeleting] = useState<ClientSummary | null>(null);
     const [busy, setBusy] = useState(false);
     const pending = useRef(false);
     useEffect(() => {
-        void loadClients();
-    }, [loadClients]);
-    const filtered = useMemo(() => {
-        const query = deferredSearch.trim().toLocaleLowerCase("pt-BR");
-        const digits = query.replace(/\D/g, "");
-        return clients.filter(
-            (client) =>
-                client.name.toLocaleLowerCase("pt-BR").includes(query) ||
-                client.email?.toLocaleLowerCase("pt-BR").includes(query) ||
-                (digits.length > 0 &&
-                    client.phone.replace(/\D/g, "").includes(digits)),
-        );
-    }, [clients, deferredSearch]);
-    const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const currentPage = Math.min(page, pages);
-    const visibleClients = filtered.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE,
-    );
+        void loadClients({ page, page_size: PAGE_SIZE, search: deferredSearch });
+    }, [loadClients, page, deferredSearch]);
+    const visibleClients = clients;
     const handleDelete = async () => {
         if (!deleting || pending.current || !isCurrentSession(sessionId))
             return;
@@ -76,6 +61,7 @@ export function ClientTable() {
                 return;
             }
             removeClient(deleting.id);
+            await loadClients({ page, page_size: PAGE_SIZE, search: deferredSearch }, true);
             useDashboardStore.getState().clearSummary();
             setDeleting(null);
             showMessage("Cliente excluído com sucesso.", "success");
@@ -98,8 +84,8 @@ export function ClientTable() {
                     <div>
                         <h2 className="font-semibold">Clientes cadastrados</h2>
                         <p className="mt-1 text-sm text-[#a7b4c8]">
-                            {filtered.length}{" "}
-                            {filtered.length === 1
+                            {total}{" "}
+                            {total === 1
                                 ? "cliente encontrado"
                                 : "clientes encontrados"}
                         </p>
@@ -113,7 +99,9 @@ export function ClientTable() {
                     />
                     <input
                         type="search"
-                        placeholder="Nome, telefone ou e-mail"
+                        disabled={busy}
+                        maxLength={255}
+                        placeholder="Nome, telefone, e-mail ou CPF/CNPJ"
                         value={search}
                         onChange={(event) => {
                             setSearch(event.target.value);
@@ -127,14 +115,14 @@ export function ClientTable() {
                 <div className="p-4">
                     <RequestError
                         message={error}
-                        onRetry={() => void loadClients(true)}
+                        onRetry={() => void loadClients({ page, page_size: PAGE_SIZE, search: deferredSearch }, true)}
                     />
                 </div>
             ) : isLoading ? (
                 <p role="status" className="p-6 text-sm text-[#a7b4c8]">
                     Carregando clientes…
                 </p>
-            ) : filtered.length === 0 ? (
+            ) : total === 0 ? (
                 <p role="status" className="p-6 text-sm text-[#a7b4c8]">
                     {search
                         ? "Nenhum cliente encontrado para esta busca."
@@ -216,7 +204,7 @@ export function ClientTable() {
                             <button
                                 type="button"
                                 aria-label="Página anterior"
-                                disabled={currentPage <= 1}
+                                disabled={busy || currentPage <= 1}
                                 className={actionClass}
                                 onClick={() => setPage(currentPage - 1)}
                             >
@@ -225,7 +213,7 @@ export function ClientTable() {
                             <button
                                 type="button"
                                 aria-label="Próxima página"
-                                disabled={currentPage >= pages}
+                                disabled={busy || currentPage >= pages}
                                 className={actionClass}
                                 onClick={() => setPage(currentPage + 1)}
                             >
@@ -274,7 +262,7 @@ function ClientActions({
     client,
     onDelete,
 }: {
-    client: ClientResponse;
+    client: ClientSummary;
     onDelete: () => void;
 }) {
     return (

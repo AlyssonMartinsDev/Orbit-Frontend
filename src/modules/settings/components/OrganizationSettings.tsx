@@ -1,12 +1,11 @@
 import { AddressFields } from "../../addresses/components/AddressFields";
 import { addressDraft, addressPayload, type AddressInput } from "../../addresses/types/address.types";
-import { useId, useRef, useState } from "react";
-import { Building2, ImagePlus, Trash2 } from "lucide-react";
+import { useId, useState } from "react";
+import { SettingsImageUpload } from "./SettingsImageUpload";
 import {
     FormSection,
     inputClass,
     primaryButtonClass,
-    secondaryButtonClass,
 } from "../../../shared/components/form/FormSection";
 import { Loading } from "../../../shared/components/loading";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
@@ -19,25 +18,6 @@ import { SettingsService } from "../services/settings.service";
 import type { Organization, OrganizationData } from "../types/settings.types";
 import { SettingsField, SaveError } from "./SettingsField";
 
-function readImage(file: File): Promise<string> {
-    if (
-        !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
-        file.size > 2 * 1024 * 1024
-    )
-        return Promise.reject(
-            new Error("Selecione uma imagem PNG, JPEG ou WebP de até 2 MB."),
-        );
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () =>
-            typeof reader.result === "string"
-                ? resolve(reader.result)
-                : reject(new Error("Não foi possível ler a imagem."));
-        reader.onerror = () =>
-            reject(new Error("Não foi possível ler a imagem."));
-        reader.readAsDataURL(file);
-    });
-}
 export function OrganizationSettings() {
     const { data, error, refresh } = useAsyncResource(
         "organization",
@@ -62,7 +42,6 @@ function OrganizationEditor({
 }) {
     const { isAdmin } = useSettings();
     const id = useId();
-    const fileInput = useRef<HTMLInputElement>(null);
     const [form, setForm] = useState<OrganizationData>(() => ({
         name: organization.name,
         trade_name: organization.trade_name,
@@ -122,83 +101,14 @@ function OrganizationEditor({
             )}
             <fieldset disabled={busy || !isAdmin} className="min-w-0 space-y-5">
                 <FormSection title="Identidade da empresa">
-                    <div className="flex min-w-0 flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-center">
-                        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#16345c] bg-white/5">
-                            {logo ? (
-                                <img
-                                    src={logo}
-                                    alt="Logo da organização"
-                                    className="h-full w-full object-contain"
-                                />
-                            ) : (
-                                <Building2
-                                    size={36}
-                                    className="text-[#8290a8]"
-                                />
-                            )}
-                        </div>
-                        <div className="min-w-0">
-                            <p className="mb-3 text-sm text-[#a7b4c8]">
-                                PNG, JPEG ou WebP, até 2 MB.
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <input
-                                    ref={fileInput}
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp"
-                                    aria-label="Selecionar logo"
-                                    className="hidden"
-                                    onChange={(event) => {
-                                        const file = event.target.files?.[0];
-                                        event.target.value = "";
-                                        if (!file) return;
-                                        void run(
-                                            async () =>
-                                                SettingsService.uploadLogo(
-                                                    await readImage(file),
-                                                ),
-                                            (updated) => {
-                                                setLogo(updated.logo_url);
-                                                showMessage(
-                                                    "Logo atualizado.",
-                                                    "success",
-                                                );
-                                            },
-                                        );
-                                    }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => fileInput.current?.click()}
-                                    className={secondaryButtonClass}
-                                >
-                                    <ImagePlus size={18} />
-                                    {logo ? "Trocar logo" : "Enviar logo"}
-                                </button>
-                                {logo && (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            void run(
-                                                SettingsService.removeLogo,
-                                                (updated) => {
-                                                    setLogo(updated.logo_url);
-                                                    showMessage(
-                                                        "Logo removido.",
-                                                        "success",
-                                                    );
-                                                },
-                                            )
-                                        }
-                                        className={secondaryButtonClass}
-                                    >
-                                        <Trash2 size={18} />
-                                        Remover logo
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                    <SettingsImageUpload
+                        kind="logo"
+                        value={logo}
+                        disabled={busy || !isAdmin}
+                        upload={async dataUrl => (await SettingsService.uploadLogo(dataUrl)).logo_url}
+                        remove={async () => (await SettingsService.removeLogo()).logo_url}
+                        onSaved={setLogo}
+                    />
                     <SettingsField
                         label="Razão social / nome"
                         required

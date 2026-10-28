@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
-import type { AccountUser } from "../types/settings.types";
+import type { AccountProfile } from "../types/settings.types";
 
 export const SettingsContext = createContext<{
-    profile: AccountUser;
+    profile: AccountProfile;
     refreshProfile: () => void;
     isAdmin: boolean;
     canReadTeam: boolean;

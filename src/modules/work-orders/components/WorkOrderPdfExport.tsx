@@ -49,9 +49,9 @@ function PhotoSelection({ orderId }: { orderId: number }) {
     try {
       const params = new URLSearchParams();
       ids.forEach(id => params.append("photo_ids", String(id)));
-      const blob = await fetchPdf(`/work_orders/${orderId}/pdf?${params}`, controller.signal);
+      const pdf = await fetchPdf(`/work_orders/${orderId}/pdf?${params}`, controller.signal);
       if (!controller.signal.aborted && isCurrentSession(sessionId)) {
-        savePdf(blob, `ordem-de-servico-${orderId}-com-fotos.pdf`);
+        savePdf(pdf.blob, pdf.filename ?? `ordem-de-servico-${orderId}-com-fotos.pdf`);
         setSuccess(true);
       }
     } catch (cause) {

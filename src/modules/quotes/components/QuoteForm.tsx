@@ -3,10 +3,10 @@ import { productPayload, productsTotal } from "../../inventory/types/document-pr
 import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
 import { useDocumentFields } from "../../custom-fields/hooks/useDocumentFields";
 import { PaymentFields } from "../../../shared/components/form/PaymentFields";
-import { itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
-import { useEffect, useId, useRef, useState } from "react";
+import { itemizedDraft, itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
+import { useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useClientStore } from "../../../shared/store/client.store";
+import { ClientSelect } from "../../clients/components/ClientSelect";
 import { inputClass, primaryButtonClass, secondaryButtonClass } from "../../../shared/components/form/FormSection";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
 import { SettingsField, SaveError } from "../../settings/components/SettingsField";
@@ -19,18 +19,20 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
   const [customValues, setCustomValues] = useState<Record<number, string>>(() => Object.fromEntries(
     quote?.custom_values.map(item => [item.field_definition_id, item.value ?? ""]) ?? [],
   ));
-  const [data, setData] = useState<QuoteData>(() => ({ payment_method: quote?.payment_method ?? null, payment_details: quote?.payment_details ?? null, pricing_mode: quote?.pricing_mode ?? "SIMPLE", items: quote?.items ?? [], client_id: quote?.client_id ?? 0, title: quote?.title ?? "", description: quote?.description ?? "", price: quote?.service_price ?? quote?.price ?? "", products: quote?.products ?? [], valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
-  const { clients, isLoaded, isLoading, error: clientError, loadClients } = useClientStore();
+  const [data, setData] = useState<QuoteData>(() => ({ payment_method: quote?.payment_method ?? null, payment_details: quote?.payment_details ?? null, ...itemizedDraft(quote), client_id: quote?.client_id ?? 0, title: quote?.title ?? "", products: quote?.products ?? [], valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
+  const [itemsError, setItemsError] = useState<string | null>(null);
   const { busy, error, run } = useSettingsMutation();
   const request = useRef<{ fingerprint: string; id: string } | null>(null);
-  useEffect(() => { void loadClients(); }, [loadClients]);
   const field = <K extends keyof QuoteData>(key: K, value: QuoteData[K]) => setData(current => ({ ...current, [key]: value }));
   return <form aria-label={quote ? "Editar orçamento" : "Novo orçamento"} className="space-y-5" onSubmit={event => {
     event.preventDefault();
-    if (!isLoaded || !data.client_id || !fields || fieldsLoading || fieldsError) return;
-    const price = data.pricing_mode === "ITEMIZED" ? itemsTotal(data.items ?? []) : data.price;
-    if (price === null || productsTotal(data.products ?? []) === null || sumAmounts([price, productsTotal(data.products ?? [])!]) === null) return;
-    const payload = { ...data, products: productPayload(data.products ?? []), service_price: price, custom_values: fields.map(field => ({ field_definition_id: field.id, value: customValues[field.id]?.trim() || null })), price, items: data.pricing_mode === "ITEMIZED" ? data.items : [] };
+    if (!data.client_id || !fields || fieldsLoading || fieldsError) return;
+    setItemsError(null);
+    if (!data.items?.length && !data.products?.length) { setItemsError("Adicione pelo menos um produto ou serviço."); return; }
+    if (data.items?.some(item => !item.description.trim())) { setItemsError("Preencha a descrição de todos os itens."); return; }
+    const price = itemsTotal(data.items ?? [], true);
+    if (price === null || productsTotal(data.products ?? []) === null || sumAmounts([price, productsTotal(data.products ?? [])!]) === null) { setItemsError("Confira quantidades e valores. O total máximo é R$ 99.999.999,99."); return; }
+    const payload = { ...data, products: productPayload(data.products ?? []), service_price: price, custom_values: fields.map(field => ({ field_definition_id: field.id, value: customValues[field.id]?.trim() || null })), price, items: data.items ?? [] };
     const fingerprint = JSON.stringify(payload);
     if (request.current?.fingerprint !== fingerprint) request.current = { fingerprint, id: crypto.randomUUID() };
     const requestId = request.current.id;
@@ -39,23 +41,14 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
     <SaveError message={error} />
     {fieldsError && <RequestError message={fieldsError} onRetry={refreshFields} />}
     {fieldsLoading && <p role="status" className="text-sm">Carregando campos do orçamento…</p>}
-    {clientError && <RequestError message={clientError} onRetry={() => void loadClients(true)} />}
     <fieldset disabled={busy} className="min-w-0 space-y-5">
-      <div><label htmlFor={clientFieldId} className="block text-sm text-[#a7b4c8]">Cliente *</label>
-        <select id={clientFieldId} required disabled={!isLoaded || isLoading} className={`${inputClass} mt-2`} value={data.client_id || ""} onChange={e => field("client_id", Number(e.target.value))}>
-          <option value="">{isLoading ? "Carregando clientes…" : "Selecione um cliente"}</option>
-          {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-        </select>
-      </div>
+      <ClientSelect value={data.client_id} onChange={value => field("client_id", value)} />
       <div className="flex flex-wrap gap-3 text-sm">
         <Link to="/clients/create" target="_blank" rel="noopener noreferrer" className="text-blue-300 underline">Cadastrar cliente em outra aba</Link>
-        <button type="button" disabled={isLoading} className="text-blue-300 underline" onClick={() => void loadClients(true)}>Atualizar clientes</button>
       </div>
       <SettingsField label="Título do orçamento" required maxLength={255} value={data.title} onChange={e => field("title", e.target.value)} />
-      <label className="block text-sm text-[#a7b4c8]">Descrição do serviço *
-        <textarea required maxLength={20000} rows={5} className={`${inputClass} mt-2 resize-y`} value={data.description} onChange={e => field("description", e.target.value)} />
-      </label>
-      <DocumentItemsEditor quote pricing_mode={data.pricing_mode ?? "SIMPLE"} items={data.items ?? []} price={data.price} products={data.products ?? []} priceLabel={data.products?.length ? "Valor dos serviços (R$)" : "Valor do orçamento (R$)"} onChange={value => setData(current => ({ ...current, ...value }))} />
+      <DocumentItemsEditor quote items={data.items ?? []} products={data.products ?? []} onChange={value => { setItemsError(null); setData(current => ({ ...current, ...value })); }} />
+      <SaveError message={itemsError} />
       <PaymentFields method={data.payment_method ?? null} details={data.payment_details ?? null} onChange={(payment_method, payment_details) => setData(current => ({ ...current, payment_method, payment_details }))} />
       <div className="grid gap-5 sm:grid-cols-2">
 
@@ -69,7 +62,7 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
         <div className="grid gap-5 sm:grid-cols-2">{fields.map(field => <CustomFieldInput key={field.id} field={{ ...field, required: field.required_quote }} id={`${clientFieldId}-custom-${field.id}`} value={customValues[field.id] ?? ""} onChange={value => setCustomValues(current => ({ ...current, [field.id]: value }))} />)}</div>
       </section>}
       <div className="flex flex-col gap-3 sm:flex-row">
-        <button type="submit" disabled={!isLoaded || isLoading || !fields || fieldsLoading || !!fieldsError} className={primaryButtonClass}>{busy ? "Salvando…" : "Salvar orçamento"}</button>
+        <button type="submit" disabled={!data.client_id || !fields || fieldsLoading || !!fieldsError} className={primaryButtonClass}>{busy ? "Salvando…" : "Salvar orçamento"}</button>
         {onCancel && <button type="button" className={secondaryButtonClass} onClick={onCancel}>Voltar sem salvar</button>}
       </div>
     </fieldset>

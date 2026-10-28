@@ -108,7 +108,7 @@ test('busca mais recente prevalece sobre resposta atrasada', async ({ page }) =>
 test('listagem permite recuperar falha de rede', async ({ page }) => {
     let first = true;
     await mockApi(page, async (route, path) => {
-        if (path !== '/clients/' || !first) return false;
+        if (path !== '/clients/paginated' || !first) return false;
         first = false;
         await route.abort('failed');
         return true;

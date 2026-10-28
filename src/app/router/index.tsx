@@ -33,6 +33,14 @@ export const router = createBrowserRouter([
                 ],
             },
             {
+                path: "/forgot-password",
+                lazy: async () => ({ Component: (await import("../../modules/auth/pages/PasswordRecoveryPage")).ForgotPasswordPage }),
+            },
+            {
+                path: "/reset-password",
+                lazy: async () => ({ Component: (await import("../../modules/auth/pages/PasswordRecoveryPage")).ResetPasswordPage }),
+            },
+            {
                 Component: ProtectedLayout,
                 children: [
                     { path: "/inventory", lazy: async () => ({ Component: (await import("../../modules/inventory/pages/InventoryPage")).InventoryPage }) },
@@ -183,6 +191,10 @@ export const router = createBrowserRouter([
                                         await import("../../modules/settings/components/UsersSettings")
                                     ).UsersSettings,
                                 }),
+                            },
+                            {
+                                path: "pdf",
+                                lazy: async () => ({ Component: (await import("../../modules/settings/components/PdfSettings")).PdfSettings }),
                             },
                             {
                                 path: "work-orders",

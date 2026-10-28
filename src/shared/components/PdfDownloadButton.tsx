@@ -31,7 +31,7 @@ function DownloadButton({ path, filename, className }: Props) {
     try {
       const pdf = await fetchPdf(path, controller.signal);
       if (!controller.signal.aborted && isCurrentSession(sessionId)) {
-        savePdf(pdf, filename);
+        savePdf(pdf.blob, pdf.filename ?? filename);
       }
     } catch (cause: unknown) {
       if (
