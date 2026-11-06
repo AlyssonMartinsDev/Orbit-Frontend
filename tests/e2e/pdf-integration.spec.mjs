@@ -39,6 +39,7 @@ for (const width of [320, 1440]) {
         await download(page.getByRole('button', { name: 'Exportar PDF' }));
         await page.goto('/work-orders/tracking');
         await page.getByRole('button', { name: `Abrir ações da ordem ${order.id}`, exact: true }).click();
-        await download(page.getByRole('dialog').getByRole('button', { name: 'Exportar PDF' }));
+        await page.getByRole('dialog').getByRole('button', { name: 'Exportar PDF', exact: true }).click();
+        await download(page.getByRole('dialog').getByRole('button', { name: 'Exportar PDF simples' }));
     });
 }

@@ -34,6 +34,7 @@ for (const width of [320, 1440]) {
         const original = await signIn(page, request, 'superadmin@example.com');
         await page.getByRole('link', { name: /Administração da plataforma|^Plataforma$/ }).click();
         await expect(page).toHaveURL(/\/settings\/platform$/);
+        await page.getByRole('button', { name: 'Nova organização' }).click();
         await fillForm(page);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await page.screenshot({ path: testInfo.outputPath('platform-form.png'), fullPage: true });
@@ -77,6 +78,7 @@ for (const role of ['admin', 'manager', 'operator']) {
 test('e-mail duplicado preserva o formulário para correção', async ({ page, request }) => {
     await signIn(page, request, 'superadmin@example.com');
     await page.goto('/settings/platform');
+    await page.getByRole('button', { name: 'Nova organização' }).click();
     await fillForm(page, 'admin@example.com');
     await page.getByRole('button', { name: 'Criar organização e administrador' }).click();
     await expect(page.getByRole('alert')).toContainText('E-mail do administrador já cadastrado');
@@ -84,4 +86,66 @@ test('e-mail duplicado preserva o formulário para correção', async ({ page, r
     await page.getByLabel('E-mail do administrador', { exact: false }).fill('corrigido@example.com');
     await page.getByRole('button', { name: 'Criar organização e administrador' }).click();
     await expect(page.getByRole('heading', { name: 'Organização e administrador criados' })).toBeVisible();
+});
+
+test('superadmin suspende e reativa organização pelo painel', async ({ page, request }) => {
+    await signIn(page, request, 'superadmin@example.com');
+    const login = await request.post(`${API}/auth/login`, { data: { email: 'admin@example.com', password: PASSWORD } });
+    const tenantHeaders = { Authorization: `Bearer ${(await login.json()).data.access_token}` };
+    await page.goto('/settings/platform');
+    await page.getByRole('button', { name: /Empresa de teste/ }).click();
+    await page.getByLabel('Status').selectOption('SUSPENDED');
+    await page.getByLabel('Motivo da alteração').fill('Pagamento pendente');
+    page.once('dialog', dialog => dialog.accept());
+    await page.getByRole('button', { name: 'Salvar acesso' }).click();
+    await expect(page.getByRole('status')).toContainText('atualizado');
+    expect((await request.get(`${API}/users/me`, { headers: tenantHeaders })).status()).toBe(403);
+    await page.getByLabel('Status').selectOption('ACTIVE');
+    await page.getByLabel('Motivo da alteração').fill('Pagamento recebido');
+    await page.getByRole('button', { name: 'Salvar acesso' }).click();
+    await expect(page.getByRole('status')).toContainText('atualizado');
+    expect((await request.get(`${API}/users/me`, { headers: tenantHeaders })).status()).toBe(401);
+    expect((await request.post(`${API}/auth/login`, { data: { email: 'admin@example.com', password: PASSWORD } })).status()).toBe(200);
+});
+
+test('superadmin cria plano e fatura; administrador vê aviso e baixa manual', async ({ page, request }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    await signIn(page, request, 'superadmin@example.com');
+    await page.goto('/settings/platform');
+    await page.getByRole('button', { name: 'Planos e faturas' }).click();
+    await page.getByLabel('Nome', { exact: true }).fill('Essencial');
+    await page.getByLabel('Preço (R$)').fill('99.90');
+    await page.getByRole('button', { name: 'Salvar plano' }).click();
+    await expect(page.getByText('Essencial ·')).toBeVisible();
+    await page.getByRole('combobox', { name: 'Organização' }).selectOption('1');
+    await page.getByRole('combobox', { name: 'Plano', exact: true }).selectOption({ label: 'Essencial' });
+    const start = new Date(); start.setDate(start.getDate() - 1);
+    const renewal = new Date(); renewal.setDate(renewal.getDate() + 5);
+    await page.getByLabel('Início').fill(start.toISOString().slice(0, 10));
+    await page.getByLabel('Renovação').fill(renewal.toISOString().slice(0, 10));
+    await page.getByRole('button', { name: 'Atribuir plano' }).click();
+    await page.getByLabel('Número').fill('F-001');
+    await page.getByLabel('Descrição da fatura').fill('Mensalidade');
+    await page.getByLabel('Valor (R$)').fill('99.90');
+    await page.getByLabel('Vencimento').fill(start.toISOString().slice(0, 10));
+    await page.getByRole('button', { name: 'Criar fatura' }).click();
+    await expect(page.getByText('F-001 · Mensalidade')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await signIn(page, request, 'admin@example.com');
+    await page.goto('/settings/billing');
+    await expect(page.getByText('F-001 · Mensalidade')).toBeVisible();
+    await expect(page.getByText('Vencido')).toBeVisible();
+    await expect(page.getByText('Gateway de pagamento: não configurado.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Marcar paga' })).toHaveCount(0);
+    await signIn(page, request, 'superadmin@example.com');
+    await page.goto('/settings/platform');
+    await page.getByRole('button', { name: 'Planos e faturas' }).click();
+    await page.getByRole('combobox', { name: 'Organização' }).selectOption('1');
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Marcar paga' }).click();
+    await expect(page.getByText(/Paga em/)).toBeVisible();
+    await signIn(page, request, 'admin@example.com');
+    await page.goto('/settings/billing');
+    await expect(page.getByText(/Paga em/)).toBeVisible();
+    await expect(page.getByText('Vencido')).toHaveCount(0);
 });

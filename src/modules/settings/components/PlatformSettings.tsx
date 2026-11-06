@@ -10,9 +10,12 @@ import { useSettingsMutation } from "../hooks/useSettingsMutation";
 import { SettingsService } from "../services/settings.service";
 import type { ProvisionedOrganization } from "../types/settings.types";
 import { SaveError, SettingsField } from "./SettingsField";
+import { PlatformOrganizations } from "./PlatformOrganizations";
+import { PlatformBillingSettings } from "./BillingSettings";
 
 export function PlatformSettings() {
   const { profile } = useSettings();
+  const [view, setView] = useState<"list" | "create" | "billing">("list");
   // A direct URL must not render the form for ordinary organization admins.
   if (!profile.is_superuser) {
     return (
@@ -27,7 +30,14 @@ export function PlatformSettings() {
       </div>
     );
   }
-  return <ProvisionForm />;
+  return <div className="space-y-5">
+    <nav className="flex flex-wrap gap-2" aria-label="Administração da plataforma">
+      <button type="button" onClick={() => setView("list")} className={view === "list" ? primaryButtonClass : secondaryButtonClass}>Organizações</button>
+      <button type="button" onClick={() => setView("create")} className={view === "create" ? primaryButtonClass : secondaryButtonClass}>Nova organização</button>
+      <button type="button" onClick={() => setView("billing")} className={view === "billing" ? primaryButtonClass : secondaryButtonClass}>Planos e faturas</button>
+    </nav>
+    {view === "list" ? <PlatformOrganizations /> : view === "billing" ? <PlatformBillingSettings /> : <ProvisionForm />}
+  </div>;
 }
 
 function ProvisionForm() {

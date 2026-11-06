@@ -22,6 +22,30 @@ async function register(page, amount) {
 }
 test.beforeEach(async ({ request }) => { expect((await request.post(`${API}/__test__/reset`)).ok()).toBe(true); });
 
+test('menu rápido vincula pagamento parcial e quita saldo sem abrir detalhes completos', async ({ page, request }) => {
+    const order = await setup(page, request);
+    await page.setViewportSize({ width: 320, height: 780 });
+    await page.goto('/work-orders/tracking');
+    await page.getByRole('button', { name: `Abrir ações da ordem ${order.id}` }).first().click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Vincular pagamento', exact: true }).click();
+    const panel = dialog.getByRole('region', { name: 'Pagamentos da OS' });
+    await expect(panel.getByRole('radio', { name: 'Pagamento total' })).toBeChecked();
+    await expect(panel.getByRole('heading', { name: 'Histórico de pagamentos' })).toHaveCount(0);
+    await panel.getByRole('radio', { name: 'Pagamento parcial' }).check();
+    await panel.getByLabel('Valor do pagamento (R$)').fill('25.00');
+    await panel.getByLabel('Forma de pagamento').selectOption('PIX');
+    await panel.getByRole('button', { name: 'Vincular pagamento parcial' }).click();
+    await expect(panel.locator('dl')).toContainText('75,00');
+    await panel.getByRole('radio', { name: 'Quitar saldo restante' }).check();
+    await panel.getByRole('button', { name: 'Quitar saldo restante' }).click();
+    await expect(panel.getByRole('form', { name: 'Vincular pagamento' })).toHaveCount(0);
+    const data = (await (await request.get(order.api, { headers: order.headers })).json()).data;
+    expect(data.payments).toHaveLength(2);
+    expect(Number(data.balance)).toBe(0);
+    await expect(page).toHaveURL(/\/work-orders\/tracking$/);
+});
+
 test('pagamento total dispensa digitação do valor e mantém data e forma escolhidas', async ({ page, request }) => {
     const order = await setup(page, request);
     await page.setViewportSize({ width: 320, height: 900 });
