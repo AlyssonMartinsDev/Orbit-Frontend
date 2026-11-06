@@ -10,6 +10,9 @@ import type {
   EditUser,
   ProvisionOrganization,
   ProvisionedOrganization,
+  PlatformOrganizationPage,
+  PlatformAccessEvent,
+  BillingPlan, BillingPlanInput, BillingSummary, BillingInvoice,
 } from "../types/settings.types";
 
 function checked<T>(response: ApiResponse<T>): ApiResponse<T> {
@@ -38,6 +41,42 @@ function data<T>(response: ApiResponse<T>): T {
   return value;
 }
 export const SettingsService = {
+  async billingPlans() {
+    return data((await api.get<ApiResponse<BillingPlan[]>>("/platform/plans")).data);
+  },
+  async createBillingPlan(payload: BillingPlanInput) {
+    return data((await api.post<ApiResponse<BillingPlan>>("/platform/plans", payload)).data);
+  },
+  async updateBillingPlan(id: number, payload: BillingPlanInput) {
+    return data((await api.put<ApiResponse<BillingPlan>>(`/platform/plans/${id}`, payload)).data);
+  },
+  async assignBillingPlan(id: number, payload: { plan_id: number; starts_on: string; renews_on: string }) {
+    return data((await api.put<ApiResponse<BillingSummary>>(`/platform/organizations/${id}/plan`, payload)).data);
+  },
+  async platformBilling(id: number) {
+    return data((await api.get<ApiResponse<BillingSummary>>(`/platform/organizations/${id}/billing`)).data);
+  },
+  async myBilling() {
+    return data((await api.get<ApiResponse<BillingSummary>>("/billing/me")).data);
+  },
+  async createBillingInvoice(id: number, payload: { number: string; description: string; amount: string; due_on: string }) {
+    return data((await api.post<ApiResponse<BillingInvoice>>(`/platform/organizations/${id}/invoices`, payload)).data);
+  },
+  async changeBillingInvoice(id: number, invoiceId: number, status: "PAID" | "VOID") {
+    return data((await api.patch<ApiResponse<BillingInvoice>>(`/platform/organizations/${id}/invoices/${invoiceId}`, { status })).data);
+  },
+  async platformOrganizations(page: number, search: string) {
+    return data((await api.get<ApiResponse<PlatformOrganizationPage>>("/platform/organizations", { params: { page, search } })).data);
+  },
+  async updatePlatformAccess(id: number, payload: { access_status: "ACTIVE" | "SUSPENDED"; access_expires_on: string | null; max_users: number | null; reason: string }) {
+    return data((await api.patch<ApiResponse<unknown>>(`/platform/organizations/${id}/access`, payload)).data);
+  },
+  async updatePlatformAdministrator(organizationId: number, userId: number, is_active: boolean, reason: string) {
+    return data((await api.patch<ApiResponse<unknown>>(`/platform/organizations/${organizationId}/administrators/${userId}`, { is_active, reason })).data);
+  },
+  async platformAccessEvents(id: number) {
+    return data((await api.get<ApiResponse<PlatformAccessEvent[]>>(`/platform/organizations/${id}/events`)).data);
+  },
   async pdfPreferences(signal?: AbortSignal) {
     return data((await api.get<ApiResponse<PdfPreferences>>("/organizations/me/pdf-settings", { signal })).data);
   },

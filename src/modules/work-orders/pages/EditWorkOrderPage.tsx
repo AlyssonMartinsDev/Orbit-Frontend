@@ -1,14 +1,18 @@
 import { useWorkOrder } from "../hooks/useWorkOrder";
 import { RequestError } from "../../../shared/components/feedback/RequestError";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import {
     AlertTriangle,
     ClipboardList,
+    Camera,
+    Eye,
     LoaderCircle,
 } from "lucide-react";
 
 import { WorkOrderForm } from "../components/WorkOrderForm";
+import { WorkOrderAttachments } from "../components/WorkOrderAttachments";
+import { secondaryButtonClass } from "../../../shared/components/form/FormSection";
 
 
 export function EditWorkOrderPage() {
@@ -260,17 +264,19 @@ export function EditWorkOrderPage() {
                 </p>
             </header>
 
+            <nav aria-label="Ações da ordem" className="mt-6 flex flex-wrap gap-3">
+                <a href="#anexos" className={secondaryButtonClass}><Camera size={18} />Adicionar fotos</a>
+                <Link to={`/work-orders/${workOrder.id}/details`} className={secondaryButtonClass}><Eye size={18} />Ver detalhes completos da OS</Link>
+            </nav>
+
 
             {/* =====================================================
                 FORMULÁRIO
             ===================================================== */}
             <div className="mt-8">
-                <WorkOrderForm
-                    key={workOrder.id}
-                mode="edit"
-                    workOrder={workOrder}
-                />
+                <WorkOrderForm key={workOrder.id} mode="edit" workOrder={workOrder} />
             </div>
+            <WorkOrderAttachments key={`attachments:${workOrder.id}`} orderId={workOrder.id} />
         </section>
     );
 }

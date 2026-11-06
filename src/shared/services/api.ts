@@ -61,6 +61,15 @@ api.interceptors.response.use(
             return Promise.reject(new CanceledError("A sessão expirou."));
         }
 
+        if (error.response?.status === 403 && error.config?.url !== "/auth/login" && getSession().token) {
+            const body = error.response.data as { errors?: { type?: string }[]; message?: string } | undefined;
+            if (body?.errors?.some((item) => item.type === "ORGANIZATION_ACCESS_BLOCKED")) {
+                sessionStorage.setItem("orbit_access_notice", body.message || "Acesso da organização bloqueado.");
+                changeSession(null);
+                return Promise.reject(new CanceledError("Acesso da organização bloqueado."));
+            }
+        }
+
         // Preserva o contrato de erros de negócio já utilizado pelas telas.
         if (error.response) {
             const body: unknown = error.response.data;

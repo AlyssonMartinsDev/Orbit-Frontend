@@ -52,6 +52,59 @@ export interface ProvisionedOrganization {
   organization: Organization;
   administrator: AccountUser;
 }
+export interface PlatformOrganization {
+  id: number;
+  name: string;
+  access_status: "ACTIVE" | "SUSPENDED";
+  access_expires_on: string | null;
+  max_users: number | null;
+  active_users: number;
+  administrators: { id: number; name: string; email: string; is_active: boolean }[];
+}
+export interface PlatformOrganizationPage {
+  items: PlatformOrganization[];
+  total: number;
+  page: number;
+  size: number;
+}
+export interface PlatformAccessEvent {
+  id: number;
+  action: string;
+  actor_user_id: number;
+  target_user_id: number | null;
+  details: { reason?: string; before?: unknown; after?: unknown; plan_id?: number; invoice_id?: number; status?: string };
+  created_at: string;
+}
+export interface BillingPlan {
+  id: number;
+  name: string;
+  description: string | null;
+  price: string;
+  cycle_months: 1 | 3 | 6 | 12;
+  max_users: number | null;
+  is_active: boolean;
+}
+export type BillingPlanInput = Omit<BillingPlan, "id">;
+export interface BillingInvoice {
+  id: number;
+  organization_id: number;
+  number: string;
+  description: string;
+  amount: string;
+  due_on: string;
+  status: "OPEN" | "PAID" | "VOID";
+  paid_on: string | null;
+  due_state: "OVERDUE" | "DUE_SOON" | null;
+  created_at: string;
+}
+export interface BillingSummary {
+  plan: BillingPlan | null;
+  starts_on: string | null;
+  renews_on: string | null;
+  renewal_state: "OVERDUE" | "DUE_SOON" | null;
+  invoices: BillingInvoice[];
+  gateway: { status: "NOT_CONFIGURED" };
+}
 export interface EditUser {
   name: string;
   email: string;

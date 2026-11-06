@@ -23,6 +23,47 @@ async function setup(page, request, email) {
 }
 test.beforeEach(async ({ request }) => { expect((await request.post(`${API}/__test__/reset`)).ok()).toBe(true); });
 
+test('menu rápido envia fotos, abre detalhes completos e edição também permite anexar', async ({ page, request }) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  const { id, headers } = await setup(page, request);
+  await page.goto('/work-orders/tracking');
+  await page.getByRole('button', { name: `Abrir ações da ordem ${id}` }).first().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Adicionar fotos', exact: true }).click();
+  const upload = dialog.getByRole('region', { name: 'Adicionar fotos' });
+  expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  await expect(upload.getByRole('article')).toHaveCount(0);
+  await upload.getByLabel('Selecionar fotos', { exact: true }).setInputFiles(photo('foto-rapida.png'));
+  await upload.getByRole('button', { name: 'Enviar arquivos', exact: true }).click();
+  await expect.poll(async () => (await (await request.get(`${API}/work_orders/${id}/attachments`, { headers })).json()).data.items.length).toBe(1);
+  await dialog.getByRole('button', { name: 'Voltar ao menu' }).click();
+  await dialog.getByRole('button', { name: 'Exportar PDF', exact: true }).click();
+  const simple = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Exportar PDF simples' }).click();
+  expect((await simple).suggestedFilename()).toBe(`ordem-de-servico-${id}.pdf`);
+  await dialog.getByRole('button', { name: 'Exportar PDF com fotos' }).click();
+  await dialog.getByRole('checkbox', { name: 'Incluir foto-rapida.png' }).check();
+  const withPhotos = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Gerar PDF com fotos' }).click();
+  expect((await withPhotos).suggestedFilename()).toBe(`ordem-de-servico-${id}-com-fotos.pdf`);
+  await dialog.getByRole('button', { name: 'Voltar ao menu' }).click();
+  await dialog.getByRole('button', { name: 'Ver detalhes completos da OS' }).click();
+  await expect(page).toHaveURL(new RegExp(`/work-orders/${id}/details$`));
+  await expect(page.getByRole('region', { name: 'Fotos e anexos' })).toContainText('foto-rapida.png');
+  await page.goto('/work-orders/tracking');
+  await page.getByRole('button', { name: `Abrir ações da ordem ${id}` }).first().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Editar ordem' }).click();
+  await expect(page).toHaveURL(new RegExp(`/work-orders/${id}/edit$`));
+  await expect(page.getByRole('heading', { name: 'Editar ordem de serviço' })).toBeVisible();
+  const editAttachments = page.getByRole('region', { name: 'Fotos e anexos' });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await editAttachments.getByLabel('Selecionar fotos e documentos', { exact: true }).setInputFiles(photo('foto-edicao.png'));
+  await editAttachments.getByRole('button', { name: 'Enviar arquivos', exact: true }).click();
+  await expect(editAttachments.getByRole('article')).toHaveCount(2);
+  await page.reload();
+  await expect(editAttachments.getByRole('article')).toHaveCount(2);
+});
+
 test('print colado entra na fila e é enviado; texto e links não viram anexos', async ({ page, request }) => {
   const { id, headers } = await setup(page, request);
   const field = page.getByRole('textbox', { name: 'Colar print ou imagem', exact: true });

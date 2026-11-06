@@ -16,6 +16,11 @@ import { useMessageStore } from "../../../shared/store/message.store";
 
 
 export function LoginPage() {
+  const [accessNotice, setAccessNotice] = useState(() => {
+    const value = sessionStorage.getItem("orbit_access_notice");
+    sessionStorage.removeItem("orbit_access_notice");
+    return value;
+  });
   const pending = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,6 +49,7 @@ export function LoginPage() {
     event: React.SubmitEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
+    setAccessNotice(null);
     if (pending.current) return;
     pending.current = true;
 
@@ -97,6 +103,7 @@ export function LoginPage() {
         text-[#f8fafc]
       "
     >
+      {accessNotice && <div role="alert" className="relative z-20 mx-auto mt-4 max-w-lg rounded-xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100">{accessNotice}</div>}
       {/* =====================================================
           BACKGROUND GLOBAL
       ===================================================== */}

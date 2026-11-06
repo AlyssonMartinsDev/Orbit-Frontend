@@ -14,7 +14,6 @@ import {
     SlidersHorizontal,
 } from "lucide-react";
 
-import { WorkOrderDetailsModal } from "../components/WorkOrderDetailsModal";
 
 import {
     useEffect,
@@ -107,10 +106,6 @@ export function WorkOrderTrackingPage() {
     const [startDate, setStartDate] =
         useState<string>("");
 
-    const [
-        isDetailsModalOpen,
-        setIsDetailsModalOpen,
-    ] = useState(false);
 
     const [endDate, setEndDate] =
         useState<string>("");
@@ -222,15 +217,6 @@ export function WorkOrderTrackingPage() {
         );
     }
 
-    function handleViewWorkOrder() {
-        setIsActionsModalOpen(false);
-        setIsDetailsModalOpen(true);
-    }
-
-    function handleCloseDetails() {
-        setIsDetailsModalOpen(false);
-        setSelectedWorkOrder(null);
-    }
 
 
     function handleCloseActions() {
@@ -277,22 +263,6 @@ export function WorkOrderTrackingPage() {
             : null;
 
 
-    const selectedWorkOrderForDetails =
-        selectedWorkOrder
-            ? {
-                id: selectedWorkOrder.id,
-                title: selectedWorkOrder.title,
-                client_name: selectedWorkOrder.client.name,
-                status_service:
-                    selectedWorkOrder.status_service,
-                status_payment:
-                    selectedWorkOrder.status_payment,
-                price:
-                    selectedWorkOrder.price,
-                created_at:
-                    selectedWorkOrder.created_at,
-            }
-            : null;
 
 
     // =========================================================
@@ -1458,15 +1428,9 @@ export function WorkOrderTrackingPage() {
                 open={isActionsModalOpen}
                 workOrder={selectedWorkOrderForModal}
                 onClose={handleCloseActions}
-                onView={handleViewWorkOrder}
                 onUpdated={() => { if (page > 1 && workOrders.length === 1) setPage(page - 1); else loadWorkOrders(); }}
             />
 
-            <WorkOrderDetailsModal
-                open={isDetailsModalOpen}
-                workOrder={selectedWorkOrderForDetails}
-                onClose={handleCloseDetails}
-            />
 
         </div>
     );

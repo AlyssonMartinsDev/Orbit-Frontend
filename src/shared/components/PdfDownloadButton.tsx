@@ -8,13 +8,14 @@ interface Props {
   path: string;
   filename: string;
   className?: string;
+  label?: string;
 }
 
 export function PdfDownloadButton(props: Props) {
   return <DownloadButton key={props.path} {...props} />;
 }
 
-function DownloadButton({ path, filename, className }: Props) {
+function DownloadButton({ path, filename, className, label = "Exportar PDF" }: Props) {
   const [sessionId] = useState(() => getSession().id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +74,7 @@ function DownloadButton({ path, filename, className }: Props) {
         ) : (
           <Download size={18} aria-hidden="true" className="shrink-0" />
         )}
-        <span aria-live="polite">{busy ? "Gerando PDF…" : "Exportar PDF"}</span>
+        <span aria-live="polite">{busy ? "Gerando PDF…" : label}</span>
       </button>
       {error && (
         <p role="alert" className="mt-2 max-w-md text-sm text-red-300">

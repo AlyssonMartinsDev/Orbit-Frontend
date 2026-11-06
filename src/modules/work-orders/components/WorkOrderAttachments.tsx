@@ -13,24 +13,24 @@ const accept = ".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,appli
 const sizeLabel = (bytes: number) => bytes === 0 ? "0 KB" : bytes < 1024 * 1024 ? `${Math.max(1, Math.ceil(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
 const message = (error: unknown) => error instanceof Error && !axios.isAxiosError(error) ? error.message : "Falha de conexão. Tente novamente.";
 
-export function WorkOrderAttachments({ orderId }: { orderId: number }) {
+export function WorkOrderAttachments({ orderId, photoOnly = false }: { orderId: number; photoOnly?: boolean }) {
   const load = useCallback((signal: AbortSignal) => AttachmentService.list(orderId, signal), [orderId]);
   const resource = useAsyncResource(`attachments:${orderId}`, load);
-  return <section aria-label="Fotos e anexos" id="anexos" className="my-6 scroll-mt-24 min-w-0 rounded-2xl border border-[#16345c] bg-[#07182d] p-4 sm:p-6">
+  return <section aria-label={photoOnly ? "Adicionar fotos" : "Fotos e anexos"} id={photoOnly ? undefined : "anexos"} className={`${photoOnly ? "" : "my-6 scroll-mt-24"} min-w-0 rounded-2xl border border-[#16345c] bg-[#07182d] p-4 sm:p-6`}>
     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><Paperclip size={22} className="shrink-0 text-blue-400" />Fotos e anexos</h2>
-      <button className={buttonClass} disabled={resource.isLoading} onClick={resource.refresh}>Atualizar anexos</button>
+      <h2 className="flex items-center gap-2 text-lg font-semibold text-white"><Paperclip size={22} className="shrink-0 text-blue-400" />{photoOnly ? "Adicionar fotos" : "Fotos e anexos"}</h2>
+      {!photoOnly && <button className={buttonClass} disabled={resource.isLoading} onClick={resource.refresh}>Atualizar anexos</button>}
     </div>
-    <p className="mb-5 text-sm text-slate-400">Registre fotos do serviço e guarde documentos desta ordem. Acesso exclusivo da sua organização.</p>
+    <p className="mb-5 text-sm text-slate-400">{photoOnly ? "Envie fotos ou cole um print. As imagens ficarão disponíveis nos detalhes completos da OS." : "Registre fotos do serviço e guarde documentos desta ordem. Acesso exclusivo da sua organização."}</p>
     {resource.error && <RequestError message={resource.error} onRetry={resource.refresh} />}
     {resource.isLoading && <p role="status" className="mb-4 text-sm text-slate-400">Carregando anexos…</p>}
-    {resource.data && <AttachmentContent orderId={orderId} data={resource.data} onChanged={resource.refresh} />}
+    {resource.data && <AttachmentContent orderId={orderId} data={resource.data} onChanged={resource.refresh} photoOnly={photoOnly} />}
   </section>;
 }
 
 type QueuedFile = { id: string; file: File; state: "pending" | "sending" | "sent" | "error"; progress: number; error?: string };
 
-function AttachmentContent({ orderId, data, onChanged }: { orderId: number; data: AttachmentList; onChanged: () => void }) {
+function AttachmentContent({ orderId, data, onChanged, photoOnly }: { orderId: number; data: AttachmentList; onChanged: () => void; photoOnly: boolean }) {
   const [queue, setQueue] = useState<QueuedFile[]>([]);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,8 +50,9 @@ function AttachmentContent({ orderId, data, onChanged }: { orderId: number; data
     if (!files?.length || active.current || !isCurrentSession(sessionId)) return false;
     const previous = queue.filter(item => item.state !== "sent");
     const selected = Array.from(files);
-    if (selected.some(file => !/\.(jpe?g|png|webp|pdf)$/i.test(file.name) || !file.size || file.size > data.max_file_bytes)) {
-      setError("Selecione fotos JPEG, PNG ou WebP, ou PDFs, não vazios e com até 10 MB por arquivo.");
+    const extension = photoOnly ? /\.(jpe?g|png|webp)$/i : /\.(jpe?g|png|webp|pdf)$/i;
+    if (selected.some(file => !extension.test(file.name) || (photoOnly && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) || !file.size || file.size > data.max_file_bytes)) {
+      setError(photoOnly ? "Selecione fotos JPEG, PNG ou WebP, não vazias e com até 10 MB cada." : "Selecione fotos JPEG, PNG ou WebP, ou PDFs, não vazios e com até 10 MB por arquivo.");
       return false;
     }
     if (data.items.length + previous.length + selected.length > data.max_files) {
@@ -149,13 +150,13 @@ function AttachmentContent({ orderId, data, onChanged }: { orderId: number; data
 
   return <>
     <div className="rounded-xl border border-dashed border-[#365780] bg-[#051020] p-4">
-      <p className="text-sm font-medium text-slate-200">Adicionar fotos ou documentos</p>
-      <p className="my-2 text-xs leading-5 text-slate-400">JPEG, PNG, WebP ou PDF · até 10 MB por arquivo · {data.items.length}/{data.max_files} anexos · {sizeLabel(data.total_bytes)} de {sizeLabel(data.max_total_bytes)} usados.</p>
+      <p className="text-sm font-medium text-slate-200">{photoOnly ? "Selecionar fotos" : "Adicionar fotos ou documentos"}</p>
+      <p className="my-2 text-xs leading-5 text-slate-400">{photoOnly ? "JPEG, PNG ou WebP" : "JPEG, PNG, WebP ou PDF"} · até 10 MB por arquivo · {data.items.length}/{data.max_files} anexos · {sizeLabel(data.total_bytes)} de {sizeLabel(data.max_total_bytes)} usados.</p>
       <p className="mb-3 text-xs text-slate-400">Fotos são otimizadas para até 2560 px e têm dados de localização removidos.</p>
-      <input ref={picker} aria-label="Selecionar fotos e documentos" type="file" multiple accept={accept} className="hidden" onChange={event => { selectFiles(event.target.files); event.target.value = ""; }} />
+      <input ref={picker} aria-label={photoOnly ? "Selecionar fotos" : "Selecionar fotos e documentos"} type="file" multiple accept={photoOnly ? "image/jpeg,image/png,image/webp" : accept} className="hidden" onChange={event => { selectFiles(event.target.files); event.target.value = ""; }} />
       <input ref={camera} aria-label="Capturar foto" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" onChange={event => { selectFiles(event.target.files); event.target.value = ""; }} />
       <div className="flex flex-wrap gap-2">
-        <button className={buttonClass} disabled={busy || data.items.length >= data.max_files} onClick={() => picker.current?.click()}><Upload size={17} />Selecionar arquivos</button>
+        <button className={buttonClass} disabled={busy || data.items.length >= data.max_files} onClick={() => picker.current?.click()}><Upload size={17} />{photoOnly ? "Selecionar fotos" : "Selecionar arquivos"}</button>
         <button className={buttonClass} disabled={busy || data.items.length >= data.max_files} onClick={() => camera.current?.click()}><Camera size={17} />Tirar foto</button>
       </div>
       <label className="mt-4 block text-sm text-slate-200">
@@ -184,8 +185,8 @@ function AttachmentContent({ orderId, data, onChanged }: { orderId: number; data
     </div>
     {notice && <p role="status" className="mt-4 text-sm text-emerald-300">{notice}</p>}
     {error && !deleting && <div className="mt-4"><RequestError message={error} /></div>}
-    {!data.items.length && <p className="mt-5 text-sm text-slate-400">Nenhum anexo nesta ordem. Adicione fotos do antes e depois, comprovantes ou outros documentos.</p>}
-    <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    {!photoOnly && !data.items.length && <p className="mt-5 text-sm text-slate-400">Nenhum anexo nesta ordem. Adicione fotos do antes e depois, comprovantes ou outros documentos.</p>}
+    {!photoOnly && <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {data.items.map(item => <article key={item.id} aria-label={`Anexo ${item.filename}`} className="min-w-0 overflow-hidden rounded-xl border border-[#24436b] bg-[#051020]">
         {item.is_image ? <button className="block w-full" aria-label={`Visualizar ${item.filename}`} onClick={() => setPreview(item)}><AttachmentImage orderId={orderId} item={item} thumbnail /></button> : <div className="flex h-28 items-center justify-center gap-2 bg-[#0b203b] text-blue-300"><FileText size={32} /><span>Documento PDF</span></div>}
         <div className="p-4"><h3 className="break-all text-sm font-medium text-white">{item.filename}</h3>
@@ -197,9 +198,9 @@ function AttachmentContent({ orderId, data, onChanged }: { orderId: number; data
           </div>
         </div>
       </article>)}
-    </div>
-    {preview && <Modal open title={preview.filename} subtitle="Foto do serviço" onClose={() => setPreview(null)}><AttachmentImage key={preview.id} orderId={orderId} item={preview} thumbnail={false} /></Modal>}
-    {deleting && <Modal open title="Excluir anexo?" onClose={() => { if (!busy) { setDeleting(null); setError(null); } }}>
+    </div>}
+    {!photoOnly && preview && <Modal open title={preview.filename} subtitle="Foto do serviço" onClose={() => setPreview(null)}><AttachmentImage key={preview.id} orderId={orderId} item={preview} thumbnail={false} /></Modal>}
+    {!photoOnly && deleting && <Modal open title="Excluir anexo?" onClose={() => { if (!busy) { setDeleting(null); setError(null); } }}>
       <p className="break-words text-sm text-slate-300">O arquivo <strong>{deleting.filename}</strong> será removido permanentemente. O registro interno de quem enviou e excluiu será mantido.</p>
       {error && <RequestError message={error} />}
       <div className="mt-5 flex flex-wrap gap-3"><button className={buttonClass} disabled={busy} onClick={() => setDeleting(null)}>Cancelar</button><button className={`${buttonClass} text-red-300`} disabled={busy} onClick={() => void remove()}>{busy ? "Excluindo…" : "Confirmar exclusão"}</button></div>

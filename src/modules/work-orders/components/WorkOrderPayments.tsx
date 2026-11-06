@@ -40,10 +40,12 @@ export function WorkOrderPayments({
   orderId,
   canceled,
   onChanged,
+  quick = false,
 }: {
   orderId: number;
   canceled: boolean;
   onChanged: () => void;
+  quick?: boolean;
 }) {
   const load = useCallback(
     (signal: AbortSignal) => PaymentService.list(orderId, signal),
@@ -68,9 +70,9 @@ export function WorkOrderPayments({
   const sectionRef = useRef<HTMLElement>(null);
   const loaded = data !== null;
   useEffect(() => {
-    if (loaded && window.location.hash === "#recebimentos")
+    if (!quick && loaded && window.location.hash === "#recebimentos")
       sectionRef.current?.scrollIntoView({ block: "start" });
-  }, [loaded]);
+  }, [loaded, quick]);
   const changed = (message: string) => {
     request.current = null;
     setAmount("");
@@ -98,19 +100,19 @@ export function WorkOrderPayments({
       : "Vincular pagamento total";
   return (
     <section
-      id="recebimentos"
+      id={quick ? undefined : "recebimentos"}
       ref={sectionRef}
       aria-label="Pagamentos da OS"
-      className="mt-6 min-w-0 scroll-mt-24 space-y-5 rounded-2xl border border-[#16345c]/40 bg-[#051020]/70 p-4 sm:p-6"
+      className={`${quick ? "" : "mt-6 scroll-mt-24"} min-w-0 space-y-5 rounded-2xl border border-[#16345c]/40 bg-[#051020]/70 p-4 sm:p-6`}
     >
       <header>
-        <h2 className="text-xl font-semibold">Pagamentos da OS</h2>
+        {!quick && <h2 className="text-xl font-semibold">Pagamentos da OS</h2>}
         <p className="mt-2 text-sm leading-6 text-[#a7b4c8]">
           Vincule um pagamento total ou parcial já recebido. O saldo e a situação
           da ordem são atualizados automaticamente.
         </p>
       </header>
-      <dl className="grid gap-3 sm:grid-cols-3">
+      <dl className={`grid gap-3 ${quick ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
         {[
           ["Valor da ordem", formatCurrency(data.total)],
           ["Recebido", formatCurrency(data.received)],
@@ -127,6 +129,7 @@ export function WorkOrderPayments({
       </dl>
       {data.review_required && (
         <div className="space-y-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+          {quick ? <p>Esta OS possui um histórico anterior em revisão. Confirme os valores antes de vincular pagamentos; a revisão completa está nos detalhes da ordem.</p> : <>
           <p>
             Esta ordem possui um status de pagamento anterior ao histórico de
             recebimentos. Registre os valores e as datas que puder confirmar
@@ -175,6 +178,7 @@ export function WorkOrderPayments({
                 Concluir revisão do histórico
               </button>
             ))}
+          </>}
         </div>
       )}
       <SaveError message={error} />
@@ -277,7 +281,7 @@ export function WorkOrderPayments({
           Reabra a ordem para registrar novos recebimentos.
         </p>
       )}
-      <h3 className="font-semibold">Histórico de pagamentos</h3>
+      {!quick && <><h3 className="font-semibold">Histórico de pagamentos</h3>
       {data.payments.length === 0 ? (
         <p className="text-sm text-[#8290a8]">Nenhum pagamento vinculado.</p>
       ) : (
@@ -382,7 +386,7 @@ export function WorkOrderPayments({
             </li>
           ))}
         </ul>
-      )}
+      )}</>}
     </section>
   );
 }

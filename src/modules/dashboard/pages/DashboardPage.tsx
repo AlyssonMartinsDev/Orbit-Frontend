@@ -19,7 +19,6 @@ import { Loading } from "../../../shared/components/loading";
 // Modal de ações para ordens de serviço
 import { WorkOrderActionsModal } from "../../work-orders/components/WorkOrderActionsModal";
 import type { DashboardRecentWorkOrder } from "../types/dashboard.types";
-import { WorkOrderDetailsModal } from "../../work-orders/components/WorkOrderDetailsModal";
 
 // Componentes da dashboard
 import { WorkOrderTabs } from "../components/WorkOrderTabs";
@@ -43,8 +42,6 @@ export function DashboardPage() {
     const [isWorkOrderModalOpen, setIsWorkOrderModalOpen] =
         useState(false);
 
-    const [isWorkOrderDetailsOpen, setIsWorkOrderDetailsOpen] =
-        useState(false);
 
 
     // ====================================================
@@ -63,15 +60,6 @@ export function DashboardPage() {
         setSelectedWorkOrder(null);
     };
 
-    const handleViewWorkOrder = () => {
-        setIsWorkOrderModalOpen(false);
-        setIsWorkOrderDetailsOpen(true);
-    };
-
-    const handleCloseWorkOrderDetails = () => {
-        setIsWorkOrderDetailsOpen(false);
-        setSelectedWorkOrder(null);
-    };
 
 
     // ====================================================
@@ -606,15 +594,9 @@ export function DashboardPage() {
                 open={isWorkOrderModalOpen}
                 workOrder={selectedWorkOrder}
                 onClose={handleCloseWorkOrderModal}
-                onView={handleViewWorkOrder}
                 onUpdated={() => loadSummary(true)}
             />
 
-            <WorkOrderDetailsModal
-                open={isWorkOrderDetailsOpen}
-                workOrder={selectedWorkOrder}
-                onClose={handleCloseWorkOrderDetails}
-            />
         </section>
     );
 }

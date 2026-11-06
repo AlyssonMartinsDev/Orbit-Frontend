@@ -12,14 +12,15 @@ import { AttachmentImage } from "./WorkOrderAttachments";
 
 const buttonClass = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[#24436b] px-4 py-2 text-sm text-blue-200 hover:bg-blue-500/10 disabled:opacity-50";
 
-export function WorkOrderPdfExport({ orderId }: { orderId: number }) {
+export function WorkOrderPdfExport({ orderId, quick = false }: { orderId: number; quick?: boolean }) {
   const [open, setOpen] = useState(false);
   return <>
-    <div className="flex flex-wrap items-start gap-3">
-      <PdfDownloadButton path={`/work_orders/${orderId}/pdf`} filename={`ordem-de-servico-${orderId}.pdf`} />
-      <button type="button" className={buttonClass} onClick={() => setOpen(true)}><Images size={18} />Incluir fotos no PDF</button>
+    <div className={quick ? "grid gap-3" : "flex flex-wrap items-start gap-3"}>
+      <PdfDownloadButton path={`/work_orders/${orderId}/pdf`} filename={`ordem-de-servico-${orderId}.pdf`} label={quick ? "Exportar PDF simples" : undefined} className={quick ? `${buttonClass} w-full` : undefined} />
+      <button type="button" className={quick ? `${buttonClass} w-full` : buttonClass} onClick={() => setOpen(value => !value)}><Images size={18} />{quick ? "Exportar PDF com fotos" : "Incluir fotos no PDF"}</button>
     </div>
-    {open && <Modal open title="Fotos no PDF da ordem" subtitle="Escolha as imagens que deseja incluir ao final do documento." onClose={() => setOpen(false)}>
+    {quick && open && <div className="mt-5 border-t border-[#24436b] pt-5"><PhotoSelection key={orderId} orderId={orderId} /></div>}
+    {!quick && open && <Modal open title="Fotos no PDF da ordem" subtitle="Escolha as imagens que deseja incluir ao final do documento." onClose={() => setOpen(false)}>
       <PhotoSelection key={orderId} orderId={orderId} />
     </Modal>}
   </>;

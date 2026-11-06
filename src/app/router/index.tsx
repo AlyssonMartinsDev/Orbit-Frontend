@@ -165,6 +165,14 @@ export const router = createBrowserRouter([
                         }),
                         children: [
                             {
+                                path: "billing",
+                                lazy: async () => ({
+                                    Component: (
+                                        await import("../../modules/settings/components/BillingSettings")
+                                    ).MyBillingSettings,
+                                }),
+                            },
+                            {
                                 path: "platform",
                                 lazy: async () => ({
                                     Component: (

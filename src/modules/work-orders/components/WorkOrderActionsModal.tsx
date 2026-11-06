@@ -1,14 +1,16 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { CheckCircle2, CreditCard, Eye, Pencil, Trash2 } from "lucide-react";
+import { Camera, CheckCircle2, CreditCard, Eye, FileDown, Pencil, Trash2 } from "lucide-react";
 import { Modal } from "../../../shared/components/modal";
-import { PdfDownloadButton } from "../../../shared/components/PdfDownloadButton";
 import { getSession, isCurrentSession } from "../../../shared/services/session";
 import { useMessageStore } from "../../../shared/store/message.store";
 import { useDashboardStore } from "../../../shared/store/dashboard.store";
 import { WorkOrderService } from "../services/work-order.service";
 import type { PaymentStatus, WorkOrderStatus } from "../types/work-order.types";
+import { WorkOrderAttachments } from "./WorkOrderAttachments";
+import { WorkOrderPayments } from "./WorkOrderPayments";
+import { WorkOrderPdfExport } from "./WorkOrderPdfExport";
 
 interface WorkOrderActionsItem {
     id: number;
@@ -21,7 +23,6 @@ interface WorkOrderActionsModalProps {
     open: boolean;
     workOrder: WorkOrderActionsItem | null;
     onClose: () => void;
-    onView: () => void;
     onUpdated?: () => void | Promise<void>;
 }
 
@@ -39,7 +40,6 @@ export function WorkOrderActionsModal(props: WorkOrderActionsModalProps) {
 function Actions({
     workOrder,
     onClose,
-    onView,
     onUpdated,
 }: WorkOrderActionsModalProps & { workOrder: WorkOrderActionsItem }) {
     const navigate = useNavigate();
@@ -47,6 +47,7 @@ function Actions({
     const [busy, setBusy] = useState(false);
     const pending = useRef(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [panel, setPanel] = useState<"menu" | "photos" | "payment" | "pdf">("menu");
     const showMessage = useMessageStore((state) => state.showMessage);
     const runAction = async (action: "service" | "delete") => {
         if (pending.current || !isCurrentSession(sessionId)) return;
@@ -91,6 +92,24 @@ function Actions({
     };
     const buttonClass =
         "flex min-h-12 w-full items-center gap-3 rounded-xl border border-[#16345c] px-4 py-3 text-left text-sm text-[#c4cede] hover:bg-[#0a2242] disabled:cursor-not-allowed disabled:opacity-50";
+    if (panel === "photos") {
+        return <Modal open title={`Adicionar fotos · OS #${workOrder.id}`} subtitle={workOrder.title} onClose={onClose}>
+            <WorkOrderAttachments orderId={workOrder.id} photoOnly />
+            <button type="button" className={`${buttonClass} mt-4`} onClick={() => setPanel("menu")}>Voltar ao menu</button>
+        </Modal>;
+    }
+    if (panel === "payment") {
+        return <Modal open title={`Vincular pagamento · OS #${workOrder.id}`} subtitle={workOrder.title} onClose={onClose}>
+            <WorkOrderPayments orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={() => { void onUpdated?.(); }} quick />
+            <button type="button" className={`${buttonClass} mt-4`} onClick={() => setPanel("menu")}>Voltar ao menu</button>
+        </Modal>;
+    }
+    if (panel === "pdf") {
+        return <Modal open title={`Exportar PDF · OS #${workOrder.id}`} subtitle="Escolha o documento simples ou selecione as fotos para esta exportação." onClose={onClose}>
+            <WorkOrderPdfExport orderId={workOrder.id} quick />
+            <button type="button" className={`${buttonClass} mt-4`} onClick={() => setPanel("menu")}>Voltar ao menu</button>
+        </Modal>;
+    }
     return (
         <Modal
             open
@@ -129,27 +148,34 @@ function Actions({
                     </>
                 ) : (
                     <>
-                        <PdfDownloadButton
-                            path={`/work_orders/${workOrder.id}/pdf`}
-                            filename={`ordem-de-servico-${workOrder.id}.pdf`}
-                            className={buttonClass}
-                        />
+                        <button type="button" className={buttonClass} onClick={() => setPanel("pdf")}><FileDown size={18} />Exportar PDF</button>
                         <button
                             type="button"
                             className={buttonClass}
-                            onClick={onView}
+                            onClick={() => {
+                                void navigate(`/work-orders/${workOrder.id}/details`);
+                                onClose();
+                            }}
                         >
                             <Eye size={18} />
-                            Visualizar detalhes
+                            Ver detalhes completos da OS
+                        </button>
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            onClick={() => setPanel("photos")}
+                        >
+                            <Camera size={18} />
+                            Adicionar fotos
                         </button>
                         <button
                             type="button"
                             className={buttonClass}
                             onClick={() => {
-                                onClose();
                                 void navigate(
                                     `/work-orders/${workOrder.id}/edit`,
                                 );
+                                onClose();
                             }}
                         >
                             <Pencil size={18} />
@@ -170,10 +196,7 @@ function Actions({
                         <button
                             type="button"
                             className={buttonClass}
-                            onClick={() => {
-                                onClose();
-                                void navigate(`/work-orders/${workOrder.id}/details#recebimentos`);
-                            }}
+                            onClick={() => setPanel("payment")}
                         >
                             <CreditCard size={18} />
                             Vincular pagamento

@@ -7,12 +7,14 @@ import {
     ShieldCheck,
     SlidersHorizontal,
     ShieldPlus,
+    CreditCard,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
 
 
 const settingsItems = [
+    { label: "Plano e faturas", mobileLabel: "Faturas", description: "Vencimentos e histórico", to: "/settings/billing", icon: CreditCard },
     { label: "Documentos PDF", mobileLabel: "PDFs", description: "Modelos e nomes dos arquivos", to: "/settings/pdf", icon: FileText },
     {
         label: "Administração da plataforma",
@@ -64,6 +66,7 @@ export function SettingsSidebar() {
     const visibleItems = settingsItems.filter(item =>
         (item.to !== "/settings/users" || canReadTeam) &&
         (item.to !== "/settings/platform" || profile.is_superuser)
+        && (item.to !== "/settings/billing" || (profile.role === "admin" && !profile.is_superuser))
     );
     return (
         <>
