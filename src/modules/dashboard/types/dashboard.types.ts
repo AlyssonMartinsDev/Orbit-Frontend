@@ -31,6 +31,7 @@ export interface DashboardFinancial {
  * =========================== */
 
 export interface DashboardRecentWorkOrder {
+  include_price: boolean;
   id: number;
   client_name: string;
   title: string;

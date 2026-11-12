@@ -21,6 +21,68 @@ async function fillItems(page) {
     await expect(page.getByText(/R\$\s*170,00/, { exact: true })).toBeVisible();
 }
 test.beforeEach(async ({ request }) => { expect((await request.post(`${API}/__test__/reset`)).ok()).toBe(true); });
+
+test('desconto em orçamento e OS sem valor podem ser editados no mobile', async ({ page, request, context }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    const { headers, clientId } = await setup(page, request);
+    await page.goto('/quotes/create');
+    await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
+    await page.getByLabel('Título do orçamento').fill('Proposta com desconto');
+    await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+    await page.getByLabel('Descrição do item 1').fill('Serviço');
+    await page.getByLabel('Valor unitário do item 1 (R$)').fill('100');
+    await page.getByLabel('Tipo de desconto').selectOption('PERCENT');
+    await page.getByLabel('Percentual (%)').fill('10');
+    await expect(page.getByRole('region', { name: 'Desconto' })).toContainText('R$ 90,00');
+    await page.getByRole('button', { name: 'Salvar orçamento' }).click();
+    await expect(page).toHaveURL(/\/quotes\/\d+$/);
+    const quoteId = Number(page.url().split('/').pop());
+    expect((await (await request.get(`${API}/quotes/${quoteId}`, { headers })).json()).data.price).toBe('90.00');
+    await page.getByRole('button', { name: 'Editar orçamento' }).click();
+    await page.getByLabel('Tipo de desconto').selectOption('AMOUNT');
+    await page.getByLabel('Valor do desconto (R$)').fill('15');
+    await page.getByRole('button', { name: 'Salvar orçamento' }).click();
+    await expect(page.getByRole('region', { name: 'Produtos e Serviços' })).toContainText('R$ 85,00');
+    await page.goto('/work-orders/create');
+    await page.getByRole('combobox', { name: 'Cliente *', exact: true }).selectOption(String(clientId));
+    await page.getByLabel('Título *').fill('Inspeção sem valor');
+    await page.getByRole('checkbox', { name: /Incluir valor na OS/ }).uncheck();
+    await page.getByRole('button', { name: 'Adicionar item', exact: true }).click();
+    await page.getByLabel('Descrição do item 1').fill('Inspeção inicial');
+    await expect(page.getByLabel('Valor unitário do item 1 (R$)')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Salvar ordem', exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const orders = (await (await request.get(`${API}/work_orders/`, { headers })).json()).data;
+    const order = orders.find(row => row.title === 'Inspeção sem valor');
+    expect(order.include_price).toBe(false);
+    await page.goto(`/work-orders/${order.id}/details`);
+    await expect(page.getByText('Valor não informado')).toBeVisible();
+    await expect(page.getByText('(11) 98888-7777')).toBeVisible();
+    const whatsapp = page.getByRole('button', { name: 'Abrir conversa no WhatsApp' });
+    await expect(whatsapp).toBeEnabled();
+    await context.route('https://wa.me/**', route => route.fulfill({ status: 200, body: 'WhatsApp' }));
+    const popupPromise = page.waitForEvent('popup');
+    await whatsapp.click();
+    const popup = await popupPromise;
+    await popup.waitForURL('https://wa.me/5511988887777');
+    await popup.close();
+    await page.getByRole('link', { name: 'Cliente itens' }).click();
+    await expect(page).toHaveURL(new RegExp(`/clients/${clientId}/details$`));
+    await page.goto(`/work-orders/${order.id}/edit`);
+    await page.getByRole('checkbox', { name: /Incluir valor na OS/ }).check();
+    await page.getByLabel('Valor unitário do item 1 (R$)').fill('80');
+    await page.getByLabel('Tipo de desconto').selectOption('AMOUNT');
+    await page.getByLabel('Valor do desconto (R$)').fill('5');
+    await page.getByRole('button', { name: 'Atualizar ordem' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    const saved = (await (await request.get(`${API}/work_orders/${order.id}`, { headers })).json()).data;
+    expect(saved.price).toBe('75.00');
+    expect(saved.include_price).toBe(true);
+    await page.goto(`/work-orders/${order.id}/edit`);
+    await expect(page.getByRole('checkbox', { name: /Incluir valor na OS/ })).toBeDisabled();
+    await expect(page.getByText(/preservar os preços registrados/)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
 for (const width of [320, 1440]) {
     test(`OS sempre detalhada, edição e serviço com preço fechado em ${width}px`, async ({ page, request }, info) => {
         await page.setViewportSize({ width, height: 900 });

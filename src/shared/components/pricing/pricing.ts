@@ -1,4 +1,5 @@
 export type PricingMode = "SIMPLE" | "ITEMIZED";
+export type DiscountType = "PERCENT" | "AMOUNT";
 export interface LineItem { kind?: "SERVICE" | "PRODUCT"; description: string; quantity: string; unit_price: string }
 
 function scaled(value: string, places: number): bigint | null {
@@ -39,6 +40,17 @@ export function sumAmounts(amounts: string[]): string | null {
     total += cents;
   }
   return total > 9999999999n ? null : decimal(total);
+}
+
+export function discountedTotal(subtotal: string, type: DiscountType | null, value: string | null): { subtotal: string; discount: string; total: string } | null {
+  const base = scaled(subtotal, 2);
+  if (base === null || base > 9999999999n) return null;
+  if (!type) return value ? null : { subtotal, discount: "0.00", total: decimal(base) };
+  const entered = scaled(value ?? "", 2);
+  if (entered === null || entered <= 0n) return null;
+  const reduction = type === "PERCENT" ? (base * entered + 5000n) / 10000n : entered;
+  if (type === "PERCENT" && entered > 10000n || reduction > base) return null;
+  return { subtotal, discount: decimal(reduction), total: decimal(base - reduction) };
 }
 
 interface PricingDocument {

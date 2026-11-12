@@ -352,7 +352,7 @@ export function WorkOrderTabs({
                                             )}
                                             `}
                                         >
-                                            {paymentLabel(workOrder.status_payment)}
+                                            {workOrder.include_price ? paymentLabel(workOrder.status_payment) : "Não informado"}
                                         </p>
                                     </div>
 
@@ -365,7 +365,7 @@ export function WorkOrderTabs({
                                         )}
                                         `}
                                     >
-                                        {formatCurrency(workOrder.price)}
+                                        {workOrder.include_price ? formatCurrency(workOrder.price) : "Valor não informado"}
                                     </p>
                                 </div>
                             </button>

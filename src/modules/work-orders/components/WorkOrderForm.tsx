@@ -1,6 +1,7 @@
 import { DocumentItemsEditor } from "../../../shared/components/pricing/DocumentItemsEditor";
 import { productPayload, productsTotal } from "../../inventory/types/document-product.types";
-import { itemizedDraft, itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
+import { discountedTotal, itemizedDraft, itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
+import { DiscountFields } from "../../../shared/components/pricing/DiscountFields";
 import { useEffect, useId, useRef, useState } from "react";
 import { PaymentFields } from "../../../shared/components/form/PaymentFields";
 import { Link, useNavigate } from "react-router-dom";
@@ -55,6 +56,9 @@ export function WorkOrderForm({
     const [clientCustomValues, setClientCustomValues] = useState<Record<number, string>>({});
     const createRequest = useRef<{ fingerprint: string; id: string } | null>(null);
     const [order, setOrder] = useState(() => ({
+        include_price: workOrder?.include_price ?? true,
+        discount_type: workOrder?.discount_type ?? null,
+        discount_value: workOrder?.discount_value ?? null,
         payment_method: workOrder?.payment_method ?? null,
         payment_details: workOrder?.payment_details ?? null,
         title: workOrder?.title ?? "",
@@ -63,6 +67,7 @@ export function WorkOrderForm({
         status_service:
             workOrder?.status_service ?? ("EM_ANDAMENTO" as WorkOrderStatus),
     }));
+    const cannotRemoveSavedPrices = !!workOrder?.include_price && Number(workOrder.subtotal) > 0;
     const [customValues, setCustomValues] = useState<Record<number, string>>(
         () =>
             Object.fromEntries(
@@ -99,14 +104,14 @@ export function WorkOrderForm({
             return;
         if (!order.items.length && !order.products.length) { showMessage("Adicione pelo menos um produto ou serviço.", "error"); return; }
         const computed = itemsTotal(order.items, true);
-        const price = computed ?? "";
+        const servicePrice = order.include_price ? computed ?? "" : "0.00";
         const productSum = productsTotal(order.products);
-        if (productSum === null || sumAmounts([price, productSum]) === null) { showMessage("Confira os valores dos serviços e produtos. O total máximo é R$ 99.999.999,99.", "error"); return; }
+        const subtotal = order.include_price && productSum !== null ? sumAmounts([servicePrice, productSum]) : "0.00";
+        const totals = subtotal !== null ? discountedTotal(subtotal, order.include_price ? order.discount_type : null, order.include_price ? order.discount_value : null) : null;
+        if ((order.include_price && (computed === null || productSum === null)) || !totals) { showMessage("Confira os valores e o desconto. O desconto não pode superar o subtotal.", "error"); return; }
         if (
             !order.title.trim() ||
-            !Number.isFinite(Number(price)) ||
-            Number(price) < 0 ||
-            price.trim() === "" ||
+            (order.include_price && (servicePrice.trim() === "" || !Number.isFinite(Number(servicePrice)))) ||
             order.items.some(item => !item.description.trim())
         ) {
             showMessage(
@@ -131,10 +136,12 @@ export function WorkOrderForm({
         const workOrderPayload = {
             ...order,
             title: order.title.trim(),
-            price,
-            service_price: price,
-            products: productPayload(order.products),
-            items: order.items,
+            price: totals.total,
+            service_price: servicePrice,
+            products: productPayload(order.products).map(product => order.include_price ? product : { ...product, unit_price: "0" }),
+            items: order.items.map(item => order.include_price ? item : { ...item, unit_price: "0" }),
+            discount_type: order.include_price ? order.discount_type : null,
+            discount_value: order.include_price ? order.discount_value : null,
             ...(mode === "edit" ? { pricing_version: workOrder?.pricing_version ?? 0 } : {}),
         };
         const payload: CreateWorkOrderRequest = {
@@ -392,11 +399,10 @@ export function WorkOrderForm({
                             ))}
                         </select>
                     </div>
-                    <p className="text-sm leading-6 text-[#a7b4c8]">
-                        O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.
-                    </p>
-                    <div className="sm:col-span-2"><DocumentItemsEditor items={order.items} products={order.products} onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
-                    <PaymentFields method={order.payment_method} details={order.payment_details} onChange={(payment_method, payment_details) => setOrder(current => ({ ...current, payment_method, payment_details }))} />
+                    <label className="flex items-start gap-3 text-sm text-[#c4cede] sm:col-span-2"><input type="checkbox" className="mt-1 size-5 accent-blue-500" checked={order.include_price} disabled={!!workOrder?.source_quote_id || cannotRemoveSavedPrices} onChange={event => setOrder(current => ({ ...current, include_price: event.target.checked, discount_type: event.target.checked ? current.discount_type : null, discount_value: event.target.checked ? current.discount_value : null }))} /><span>Incluir valor na OS<span className="mt-1 block text-xs text-[#8290a8]">{workOrder?.source_quote_id ? "Uma OS originada de orçamento mantém seus valores." : cannotRemoveSavedPrices ? "Esta OS já possui valores salvos. Para preservar os preços registrados, esta opção não pode ser desmarcada." : "Sem valor, os preços não aparecem na ordem nem no PDF. Ao salvar sem valor, os preços dos itens serão zerados."}</span></span></label>
+                    <div className="sm:col-span-2"><DocumentItemsEditor items={order.items} products={order.products} showPrices={order.include_price} onChange={value => setOrder(current => ({ ...current, ...value }))} /></div>
+                    {order.include_price && <div className="sm:col-span-2"><DiscountFields subtotal={(() => { const services = itemsTotal(order.items, true); const products = productsTotal(order.products); return services !== null && products !== null ? sumAmounts([services, products]) : null; })()} type={order.discount_type} value={order.discount_value} onChange={(discount_type, discount_value) => setOrder(current => ({ ...current, discount_type, discount_value }))} /></div>}
+                    {order.include_price && <><p className="text-sm leading-6 text-[#a7b4c8] sm:col-span-2">O status do pagamento será calculado automaticamente pelos recebimentos registrados nos detalhes da ordem.</p><PaymentFields method={order.payment_method} details={order.payment_details} onChange={(payment_method, payment_details) => setOrder(current => ({ ...current, payment_method, payment_details }))} /></>}
                 </FormSection>
                 {fieldsError && (
                     <RequestError

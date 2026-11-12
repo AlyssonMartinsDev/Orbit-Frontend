@@ -13,6 +13,7 @@ import { WorkOrderPayments } from "./WorkOrderPayments";
 import { WorkOrderPdfExport } from "./WorkOrderPdfExport";
 
 interface WorkOrderActionsItem {
+    include_price?: boolean;
     id: number;
     title: string;
     client_name: string;
@@ -193,14 +194,14 @@ function Actions({
                             <CheckCircle2 size={18} />
                             Finalizar serviço
                         </button>
-                        <button
+                        {workOrder.include_price !== false && <button
                             type="button"
                             className={buttonClass}
                             onClick={() => setPanel("payment")}
                         >
                             <CreditCard size={18} />
                             Vincular pagamento
-                        </button>
+                        </button>}
                         <button
                             type="button"
                             className={`${buttonClass} text-red-300`}

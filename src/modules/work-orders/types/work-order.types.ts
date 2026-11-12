@@ -1,6 +1,6 @@
 import type { DocumentProduct } from "../../inventory/types/document-product.types";
 import type { PaymentDetails } from "../../../shared/types/payment-details";
-import type { LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
+import type { DiscountType, LineItem, PricingMode } from "../../../shared/components/pricing/pricing";
 import type { PaymentMethod } from "../services/payment.service";
 import type {
     CustomFieldModule,
@@ -54,6 +54,9 @@ export type PaymentStatus =
 // ============================================================
 
 export interface WorkOrderDataRequest {
+    include_price?: boolean;
+    discount_type?: DiscountType | null;
+    discount_value?: string | null;
     payment_details?: PaymentDetails | null;
   payment_method?: PaymentMethod | null;
     pricing_mode?: PricingMode;
@@ -151,6 +154,9 @@ export interface CreateWorkOrderRequest {
 // ============================================================
 
 export interface UpdateWorkOrderRequest {
+    include_price?: boolean;
+    discount_type?: DiscountType | null;
+    discount_value?: string | null;
     payment_details?: PaymentDetails | null;
   payment_method?: PaymentMethod | null;
     custom_values?: WorkOrderCustomValuesRequest;
@@ -173,6 +179,11 @@ export interface UpdateWorkOrderRequest {
 // ============================================================
 
 export interface WorkOrderResponse {
+    include_price: boolean;
+    discount_type: DiscountType | null;
+    discount_value: string | null;
+    subtotal: string;
+    discount_amount: string;
     payment_details: PaymentDetails | null;
   payment_method: PaymentMethod | null;
     pricing_mode?: PricingMode;
@@ -227,6 +238,7 @@ export type WorkOrderDetailsResponse = WorkOrderResponse;
  * exibida na página de acompanhamento.
  */
 export interface WorkOrderListItem {
+    include_price: boolean;
     payment_details: PaymentDetails | null;
   payment_method: PaymentMethod | null;
     id: number;
