@@ -3,7 +3,8 @@ import { productPayload, productsTotal } from "../../inventory/types/document-pr
 import { CustomFieldInput } from "../../custom-fields/components/CustomFieldInput";
 import { useDocumentFields } from "../../custom-fields/hooks/useDocumentFields";
 import { PaymentFields } from "../../../shared/components/form/PaymentFields";
-import { itemizedDraft, itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
+import { discountedTotal, itemizedDraft, itemsTotal, sumAmounts } from "../../../shared/components/pricing/pricing";
+import { DiscountFields } from "../../../shared/components/pricing/DiscountFields";
 import { useId, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ClientSelect } from "../../clients/components/ClientSelect";
@@ -19,7 +20,7 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
   const [customValues, setCustomValues] = useState<Record<number, string>>(() => Object.fromEntries(
     quote?.custom_values.map(item => [item.field_definition_id, item.value ?? ""]) ?? [],
   ));
-  const [data, setData] = useState<QuoteData>(() => ({ payment_method: quote?.payment_method ?? null, payment_details: quote?.payment_details ?? null, ...itemizedDraft(quote), client_id: quote?.client_id ?? 0, title: quote?.title ?? "", products: quote?.products ?? [], valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
+  const [data, setData] = useState<QuoteData>(() => ({ payment_method: quote?.payment_method ?? null, payment_details: quote?.payment_details ?? null, discount_type: quote?.discount_type ?? null, discount_value: quote?.discount_value ?? null, ...itemizedDraft(quote), client_id: quote?.client_id ?? 0, title: quote?.title ?? "", products: quote?.products ?? [], valid_until: quote?.valid_until ?? null, terms: quote?.terms ?? null }));
   const [itemsError, setItemsError] = useState<string | null>(null);
   const { busy, error, run } = useSettingsMutation();
   const request = useRef<{ fingerprint: string; id: string } | null>(null);
@@ -30,9 +31,12 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
     setItemsError(null);
     if (!data.items?.length && !data.products?.length) { setItemsError("Adicione pelo menos um produto ou serviço."); return; }
     if (data.items?.some(item => !item.description.trim())) { setItemsError("Preencha a descrição de todos os itens."); return; }
-    const price = itemsTotal(data.items ?? [], true);
-    if (price === null || productsTotal(data.products ?? []) === null || sumAmounts([price, productsTotal(data.products ?? [])!]) === null) { setItemsError("Confira quantidades e valores. O total máximo é R$ 99.999.999,99."); return; }
-    const payload = { ...data, products: productPayload(data.products ?? []), service_price: price, custom_values: fields.map(field => ({ field_definition_id: field.id, value: customValues[field.id]?.trim() || null })), price, items: data.items ?? [] };
+    const services = itemsTotal(data.items ?? [], true);
+    const products = productsTotal(data.products ?? []);
+    const subtotal = services !== null && products !== null ? sumAmounts([services, products]) : null;
+    const totals = subtotal !== null ? discountedTotal(subtotal, data.discount_type ?? null, data.discount_value ?? null) : null;
+    if (!services || !totals) { setItemsError("Confira quantidades, valores e desconto. O desconto não pode superar o subtotal de R$ 99.999.999,99."); return; }
+    const payload = { ...data, products: productPayload(data.products ?? []), service_price: services, custom_values: fields.map(field => ({ field_definition_id: field.id, value: customValues[field.id]?.trim() || null })), price: totals.total, items: data.items ?? [] };
     const fingerprint = JSON.stringify(payload);
     if (request.current?.fingerprint !== fingerprint) request.current = { fingerprint, id: crypto.randomUUID() };
     const requestId = request.current.id;
@@ -48,6 +52,7 @@ export function QuoteForm({ quote, onSaved, onCancel }: { quote?: Quote; onSaved
       </div>
       <SettingsField label="Título do orçamento" required maxLength={255} value={data.title} onChange={e => field("title", e.target.value)} />
       <DocumentItemsEditor quote items={data.items ?? []} products={data.products ?? []} onChange={value => { setItemsError(null); setData(current => ({ ...current, ...value })); }} />
+      <DiscountFields subtotal={(() => { const services = itemsTotal(data.items ?? [], true); const products = productsTotal(data.products ?? []); return services !== null && products !== null ? sumAmounts([services, products]) : null; })()} type={data.discount_type ?? null} value={data.discount_value ?? null} onChange={(discount_type, discount_value) => setData(current => ({ ...current, discount_type, discount_value }))} />
       <SaveError message={itemsError} />
       <PaymentFields method={data.payment_method ?? null} details={data.payment_details ?? null} onChange={(payment_method, payment_details) => setData(current => ({ ...current, payment_method, payment_details }))} />
       <div className="grid gap-5 sm:grid-cols-2">

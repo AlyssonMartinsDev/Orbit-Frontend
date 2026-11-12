@@ -259,6 +259,7 @@ export function WorkOrderTrackingPage() {
 
                 status_payment:
                     selectedWorkOrder.status_payment,
+                include_price: selectedWorkOrder.include_price,
             }
             : null;
 
@@ -1010,11 +1011,11 @@ export function WorkOrderTrackingPage() {
 
                                                         <td className="px-5 py-4">
 
-                                                            <PaymentStatusBadge
+                                                            {workOrder.include_price ? <PaymentStatusBadge
                                                                 status={
                                                                     workOrder.status_payment
                                                                 }
-                                                            />
+                                                            /> : <span className="text-sm text-[#a7b4c8]">Não informado</span>}
 
                                                         </td>
 
@@ -1030,9 +1031,7 @@ export function WorkOrderTrackingPage() {
                                                                 text-[#f8fafc]
                                                             "
                                                         >
-                                                            {formatCurrency(
-                                                                workOrder.price
-                                                            )}
+                                                            {workOrder.include_price ? formatCurrency(workOrder.price) : "Valor não informado"}
                                                         </td>
 
 
@@ -1217,11 +1216,11 @@ export function WorkOrderTrackingPage() {
                                                     }
                                                 />
 
-                                                <PaymentStatusBadge
+                                                {workOrder.include_price ? <PaymentStatusBadge
                                                     status={
                                                         workOrder.status_payment
                                                     }
-                                                />
+                                                /> : <span className="text-sm text-[#a7b4c8]">Não informado</span>}
 
                                             </div>
 
@@ -1251,9 +1250,7 @@ export function WorkOrderTrackingPage() {
                                                         text-[#f8fafc]
                                                     "
                                                 >
-                                                    {formatCurrency(
-                                                        workOrder.price
-                                                    )}
+                                                    {workOrder.include_price ? formatCurrency(workOrder.price) : "Valor não informado"}
                                                 </span>
 
                                             </div>

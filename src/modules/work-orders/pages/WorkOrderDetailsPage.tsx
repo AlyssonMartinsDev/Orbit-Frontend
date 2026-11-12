@@ -894,20 +894,40 @@ export function WorkOrderDetailsPage() {
                                 </p>
 
 
-                                <p
+                                <Link
+                                    to={`/clients/${workOrder.client.id}/details`}
                                     className="
                                         mt-1
                                         truncate
                                         text-sm
                                         font-medium
                                         text-[#f8fafc]
+                                        underline-offset-4
+                                        hover:text-[#70b4ff]
+                                        hover:underline
                                     "
                                 >
                                     {workOrder.client.name}
-                                </p>
+                                </Link>
 
                             </div>
 
+                        </div>
+
+
+                        {/* CONTATO */}
+
+                        <div className="flex items-center gap-4 rounded-xl border border-[#16345c]/25 bg-[#010b1b]/35 p-4">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2583ff]/10 text-[#3692ff]">
+                                <Phone size={17} strokeWidth={1.8} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs text-[#56657d]">Contato</p>
+                                <p className="mt-1 truncate text-sm font-medium text-[#f8fafc]">
+                                    {workOrder.client.phone ? formatPhone(workOrder.client.phone) : "Não informado"}
+                                </p>
+                            </div>
+                            {workOrder.client.phone && <WhatsAppButton phone={workOrder.client.phone} />}
                         </div>
 
 
@@ -967,11 +987,7 @@ export function WorkOrderDetailsPage() {
                                         text-[#f8fafc]
                                     "
                                 >
-                                    {formatCurrency(
-                                        Number(
-                                            workOrder.price
-                                        )
-                                    )}
+                                    {workOrder.include_price ? formatCurrency(Number(workOrder.price)) : "Valor não informado"}
                                 </p>
 
                             </div>
@@ -1113,7 +1129,7 @@ export function WorkOrderDetailsPage() {
                                     }
                                 `}
                             >
-                                {workOrder.status_payment}
+                                {workOrder.include_price ? workOrder.status_payment : "Não informado"}
                             </span>
                             <dl className="mt-4 text-sm">
                                 <dt className="text-[#8290a8]">Método de pagamento</dt>
@@ -1228,10 +1244,10 @@ export function WorkOrderDetailsPage() {
             </section>}
 
 
-            <DocumentItemsSummary items={workOrder.items ?? []} products={workOrder.products ?? []} servicePrice={workOrder.service_price ?? workOrder.price} total={workOrder.price} order />
+            <DocumentItemsSummary items={workOrder.items ?? []} products={workOrder.products ?? []} servicePrice={workOrder.service_price ?? workOrder.price} total={workOrder.price} order showPrices={workOrder.include_price} subtotal={workOrder.subtotal} discountAmount={workOrder.discount_amount} discountType={workOrder.discount_type} discountValue={workOrder.discount_value} />
             <FollowupPanel key={`followup:${workOrder.id}:${workOrder.status_service}`} orderId={workOrder.id} />
             <WorkOrderAttachments key={`attachments:${workOrder.id}`} orderId={workOrder.id} />
-            <WorkOrderPayments key={workOrder.id} orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={refresh} />
+            {workOrder.include_price && <WorkOrderPayments key={workOrder.id} orderId={workOrder.id} canceled={workOrder.status_service === "CANCELADO"} onChanged={refresh} />}
 
             {/* =================================================
                 DADOS COMPLEMENTARES
